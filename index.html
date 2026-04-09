@@ -2,116 +2,135 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>英语学习网站</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            padding: 15px;
         }
         .container {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 25px 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             max-width: 800px;
             width: 100%;
+            margin: 0 auto;
         }
         h1 {
             color: #333;
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 2.5em;
+            margin-bottom: 8px;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
         }
         .subtitle {
             text-align: center;
             color: #666;
-            margin-bottom: 40px;
+            margin-bottom: 25px;
+            font-size: clamp(0.85rem, 3vw, 1rem);
         }
-        .lessons { display: grid; gap: 20px; }
+        .lessons { display: grid; gap: 15px; }
         .lesson-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px;
-            padding: 30px;
+            border-radius: 12px;
+            padding: 20px;
             color: white;
             cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
             text-decoration: none;
             display: block;
+            position: relative;
         }
-        .lesson-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        .lesson-card:active { transform: scale(0.98); }
+        .lesson-card h2 { font-size: clamp(1.1rem, 4vw, 1.5rem); margin-bottom: 8px; }
+        .lesson-card p { 
+            opacity: 0.9; 
+            line-height: 1.5; 
+            font-size: clamp(0.85rem, 3vw, 1rem);
         }
-        .lesson-card h2 { font-size: 1.8em; margin-bottom: 10px; }
-        .lesson-card p { opacity: 0.9; line-height: 1.6; }
-        .lesson-card .topics { margin-top: 15px; font-size: 0.9em; opacity: 0.8; }
+        .lesson-card .topics { 
+            margin-top: 12px; 
+            font-size: clamp(0.75rem, 2.5vw, 0.85rem); 
+            opacity: 0.8; 
+        }
         
         .wrong-card {
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%) !important;
-            position: relative;
         }
-        .wrong-card:hover { box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4) !important; }
         .wrong-badge {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             background: white;
             color: #ff6b6b;
-            padding: 5px 15px;
-            border-radius: 20px;
+            padding: 4px 12px;
+            border-radius: 15px;
             font-weight: bold;
-            font-size: 0.9em;
+            font-size: 0.85rem;
             display: none;
         }
         .wrong-badge.show { display: block; }
         
         .practice-section {
-            margin-top: 40px;
-            padding-top: 30px;
+            margin-top: 30px;
+            padding-top: 25px;
             border-top: 2px solid #eee;
         }
         .practice-section h3 {
             color: #333;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-align: center;
+            font-size: clamp(1rem, 4vw, 1.2rem);
         }
         .practice-modes {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
         }
         .practice-btn {
             background: #f8f9fa;
             border: 2px solid #667eea;
-            border-radius: 10px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 18px 10px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             text-decoration: none;
             color: #667eea;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
         }
-        .practice-btn:hover {
+        .practice-btn:active {
             background: #667eea;
             color: white;
+            transform: scale(0.95);
         }
-        .practice-btn .icon { font-size: 2em; margin-bottom: 10px; }
+        .practice-btn .icon { font-size: 1.8rem; margin-bottom: 6px; }
+        .practice-btn div { font-size: 0.9rem; font-weight: 500; }
         
         .wrong-practice-btn {
             background: #fff5f5;
             border: 2px solid #ff6b6b;
             color: #ff6b6b;
         }
-        .wrong-practice-btn:hover {
+        .wrong-practice-btn:active {
             background: #ff6b6b;
             color: white;
+        }
+
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { padding: 40px; border-radius: 20px; }
+            .practice-modes { grid-template-columns: repeat(4, 1fr); }
+            .practice-btn { padding: 25px 15px; min-height: 120px; }
+            .practice-btn .icon { font-size: 2rem; }
         }
     </style>
 </head>
@@ -122,28 +141,28 @@
         
         <div class="lessons">
             <a href="lesson1.html" class="lesson-card">
-                <h2>📚 Lesson 1 - am / is / are</h2>
-                <p>学习 be 动词的基本用法，掌握人称与动词的搭配</p>
-                <div class="topics">词汇：人物、形容词、地点、国家 | 句型：肯定句、否定句、疑问句</div>
+                <h2>📚 Lesson 1</h2>
+                <p>am / is / are</p>
+                <div class="topics">be动词 · 人称搭配 · 肯定/否定/疑问句</div>
             </a>
             
             <a href="lesson2.html" class="lesson-card">
-                <h2>📚 Lesson 2 - do / does / have / has</h2>
-                <p>学习一般现在时，动词短语和日常对话</p>
-                <div class="topics">词汇：日常活动、职业、家庭 | 句型：Do/Does 疑问句、Have/Has 用法</div>
+                <h2>📚 Lesson 2</h2>
+                <p>do / does / have / has</p>
+                <div class="topics">一般现在时 · 动词短语 · 日常对话</div>
             </a>
             
             <a href="lesson3.html" class="lesson-card">
-                <h2>📚 Lesson 3 - can / 第三人称单数</h2>
-                <p>学习表达能力、许可和更多日常用语</p>
-                <div class="topics">词汇：活动、场所、工作 | 句型：Can 的用法、代词宾格</div>
+                <h2>📚 Lesson 3</h2>
+                <p>can / 第三人称单数</p>
+                <div class="topics">表达能力 · 请求许可 · 代词宾格</div>
             </a>
             
             <a href="wrong.html" class="lesson-card wrong-card">
                 <span class="wrong-badge" id="wrong-count">0</span>
                 <h2>📝 错题练习</h2>
-                <p>针对性练习你的错题，巩固薄弱环节</p>
-                <div class="topics">自动收集错题 · 连续5次正确后自动移除</div>
+                <p>针对性巩固薄弱环节</p>
+                <div class="topics">自动收集 · 5次正确后移除</div>
             </a>
         </div>
         
@@ -171,7 +190,6 @@
     </div>
     
     <script>
-        // 更新错题数量
         function updateWrongCount() {
             const keys = ['english_learning_wrong_answers_l1', 'english_learning_wrong_answers_l2', 'english_learning_wrong_answers_l3'];
             let count = 0;
