@@ -2,66 +2,264 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lesson 2 - do / does / have / has</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; min-height: 100vh; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #eee; }
-        h1 { color: #333; }
-        .back-btn { background: #667eea; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
-        .tab { padding: 12px 24px; background: #f0f0f0; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #f5f7fa; 
+            min-height: 100vh; 
+            padding: 10px; 
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 16px; 
+            padding: 20px 15px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1); 
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 2px solid #eee; 
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        h1 { 
+            color: #333; 
+            font-size: clamp(1.2rem, 4.5vw, 1.8rem); 
+        }
+        .back-btn { 
+            background: #667eea; 
+            color: white; 
+            padding: 12px 24px; 
+            border-radius: 10px; 
+            text-decoration: none; 
+            font-size: 1rem;
+            display: inline-block;
+        }
+        .tabs { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 20px; 
+            flex-wrap: nowrap; 
+            overflow-x: auto; 
+            padding-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tabs::-webkit-scrollbar { height: 4px; }
+        .tabs::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+        .tab { 
+            padding: 12px 20px; 
+            background: #f0f0f0; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 1rem; 
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
         .tab.active { background: #667eea; color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .grammar-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .grammar-table th, .grammar-table td { border: 1px solid #ddd; padding: 15px; text-align: left; }
+        .grammar-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 15px 0; 
+            font-size: clamp(0.85rem, 3vw, 1rem);
+        }
+        .grammar-table th, .grammar-table td { 
+            border: 1px solid #ddd; 
+            padding: 12px 10px; 
+            text-align: left; 
+        }
         .grammar-table th { background: #667eea; color: white; }
-        .vocab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin: 20px 0; }
-        .vocab-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; position: relative; }
-        .vocab-card .en { font-size: 1.2em; font-weight: bold; margin-bottom: 5px; }
-        .vocab-card .speaker-btn { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.3); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 14px; }
-        .vocab-card .speaker-btn:hover { background: rgba(255,255,255,0.5); }
-        .reading-item { background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 15px 0; border-left: 4px solid #667eea; position: relative; padding-right: 50px; }
-        .reading-item .speaker-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: #667eea; border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 14px; }
-        .quiz-container { background: #f8f9fa; padding: 40px; border-radius: 15px; text-align: center; min-height: 300px; }
-        .quiz-progress { margin-bottom: 20px; color: #667eea; font-size: 1.1em; }
-        .quiz-question { font-size: 1.5em; margin: 30px 0; color: #333; }
-        .quiz-input { width: 100%; max-width: 400px; padding: 15px; border: 2px solid #ddd; border-radius: 10px; font-size: 1.2em; text-align: center; margin: 20px 0; }
+        .vocab-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px; 
+            margin: 15px 0; 
+        }
+        @media (min-width: 600px) { 
+            .vocab-grid { grid-template-columns: repeat(3, 1fr); } 
+        }
+        @media (min-width: 900px) { 
+            .vocab-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } 
+        }
+        .vocab-card { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 15px 12px; 
+            border-radius: 12px; 
+            text-align: center; 
+            position: relative; 
+            font-size: clamp(0.85rem, 3vw, 1rem);
+        }
+        .vocab-card .en { 
+            font-size: clamp(1rem, 3.5vw, 1.2em); 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+        }
+        .vocab-card .speaker-btn { 
+            position: absolute; 
+            top: 8px; 
+            right: 8px; 
+            background: rgba(255,255,255,0.3); 
+            border: none; 
+            color: white; 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .vocab-card .speaker-btn:active { background: rgba(255,255,255,0.5); }
+        .reading-item { 
+            background: #f8f9fa; 
+            padding: 15px 50px 15px 15px; 
+            border-radius: 12px; 
+            margin: 12px 0; 
+            border-left: 4px solid #667eea; 
+            position: relative; 
+            font-size: clamp(0.9rem, 3.2vw, 1.05rem);
+            line-height: 1.5;
+        }
+        .reading-item .speaker-btn { 
+            position: absolute; 
+            right: 10px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            background: #667eea; 
+            border: none; 
+            color: white; 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .reading-item .speaker-btn:active { background: #5a6fd6; }
+        .quiz-container { 
+            background: #f8f9fa; 
+            padding: 25px 15px; 
+            border-radius: 16px; 
+            text-align: center; 
+            min-height: 280px; 
+        }
+        .quiz-progress { 
+            margin-bottom: 15px; 
+            color: #667eea; 
+            font-size: clamp(1rem, 3.5vw, 1.15em); 
+        }
+        .quiz-question { 
+            font-size: clamp(1.1rem, 4vw, 1.5em); 
+            margin: 20px 0; 
+            color: #333; 
+            line-height: 1.5;
+        }
+        .quiz-input { 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 15px; 
+            border: 2px solid #ddd; 
+            border-radius: 12px; 
+            font-size: 1.1rem; 
+            text-align: center; 
+            margin: 15px 0; 
+        }
         .quiz-input.correct { border-color: #28a745; background: #d4edda; }
         .quiz-input.wrong { border-color: #dc3545; background: #f8d7da; }
-        .quiz-btn { background: #667eea; color: white; border: none; padding: 15px 40px; border-radius: 10px; cursor: pointer; font-size: 1.1em; margin: 10px; }
+        .quiz-btn { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 14px 35px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 1.05rem; 
+            margin: 10px; 
+            min-width: 120px;
+        }
+        .quiz-btn:active { background: #5a6fd6; }
         .quiz-btn.hint-btn { background: #ffc107; color: #333; }
-        .quiz-feedback { margin-top: 20px; padding: 15px; border-radius: 10px; font-size: 1.1em; display: none; }
+        .quiz-btn.hint-btn:active { background: #e5ac00; }
+        .quiz-feedback { 
+            margin-top: 15px; 
+            padding: 15px; 
+            border-radius: 12px; 
+            font-size: 1.05em; 
+            display: none; 
+        }
         .quiz-feedback.show { display: block; }
         .quiz-feedback.correct { background: #d4edda; color: #155724; }
         .quiz-feedback.wrong { background: #f8d7da; color: #721c24; }
         .mode-toggle { margin-bottom: 20px; }
-        .mode-toggle button { padding: 10px 20px; margin: 0 5px; border: 2px solid #667eea; background: white; color: #667eea; border-radius: 8px; cursor: pointer; }
+        .mode-toggle button { 
+            padding: 12px 24px; 
+            margin: 0 5px; 
+            border: 2px solid #667eea; 
+            background: white; 
+            color: #667eea; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 1rem;
+        }
         .mode-toggle button.active { background: #667eea; color: white; }
-        .completion-message { text-align: center; padding: 40px; }
-        .completion-message h2 { color: #28a745; margin-bottom: 20px; }
-        .stars { font-size: 3em; margin: 20px 0; }
-        .answer-display { font-size: 1.3em; color: #667eea; font-weight: bold; margin: 15px 0; padding: 15px; background: #e7e9ff; border-radius: 8px; }
-        .hint-text { color: #888; font-size: 0.9em; margin: 10px 0; display: none; }
+        .completion-message { text-align: center; padding: 30px 15px; }
+        .completion-message h2 { color: #28a745; margin-bottom: 15px; font-size: clamp(1.3rem, 5vw, 1.8rem); }
+        .stars { font-size: clamp(2rem, 8vw, 3em); margin: 15px 0; }
+        .answer-display { 
+            font-size: clamp(1.1rem, 4vw, 1.3em); 
+            color: #667eea; 
+            font-weight: bold; 
+            margin: 15px 0; 
+            padding: 15px; 
+            background: #e7e9ff; 
+            border-radius: 10px; 
+        }
+        .hint-text { color: #888; font-size: 0.95em; margin: 10px 0; display: none; }
         .hint-text.show { display: block; }
-        h2 { color: #667eea; margin: 30px 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #eee; }
+        h2 { 
+            color: #667eea; 
+            margin: 25px 0 12px 0; 
+            padding-bottom: 8px; 
+            border-bottom: 2px solid #eee; 
+            font-size: clamp(1.1rem, 4vw, 1.4rem);
+        }
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { padding: 40px; border-radius: 20px; }
+            .header { margin-bottom: 30px; padding-bottom: 20px; }
+            .tabs { margin-bottom: 30px; flex-wrap: wrap; overflow-x: visible; }
+            .quiz-container { padding: 40px; }
+            .quiz-question { margin: 30px 0; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Lesson 2 - do / does / have / has</h1>
-            <a href="index.html" class="back-btn">返回首页</a>
+            <h1>📚 Lesson 2 - do / does / have / has</h1>
+            <a href="index.html" class="back-btn">← 返回</a>
         </div>
         <div class="tabs">
-            <button class="tab active" onclick="showTab('grammar')">语法学习</button>
-            <button class="tab" onclick="showTab('vocab')">词汇表</button>
-            <button class="tab" onclick="showTab('reading')">阅读材料</button>
-            <button class="tab" onclick="showTab('dictation')">单词默写</button>
-            <button class="tab" onclick="showTab('fillblank')">填空练习</button>
-            <button class="tab" onclick="showTab('translate')">翻译练习</button>
+            <button class="tab active" onclick="showTab('grammar')">📖 语法</button>
+            <button class="tab" onclick="showTab('vocab')">📝 词汇</button>
+            <button class="tab" onclick="showTab('reading')">📄 阅读</button>
+            <button class="tab" onclick="showTab('dictation')">✍️ 默写</button>
+            <button class="tab" onclick="showTab('fillblank')">🔤 填空</button>
+            <button class="tab" onclick="showTab('translate')">🌐 翻译</button>
         </div>
         <div id="grammar" class="tab-content active">
             <h2>1. 动词短语</h2>
@@ -95,17 +293,17 @@
                 <button onclick="setDictationMode('en2cn')">英译中</button>
             </div>
             <div class="quiz-container" id="dictation-quiz">
-                <div class="completion-message"><h2>单词默写练习</h2><p style="color:#666;margin:20px 0;">选择上方模式开始练习</p></div>
+                <div class="completion-message"><h2>🎯 单词默写</h2><p style="color:#666;margin:20px 0;">选择上方模式开始练习</p></div>
             </div>
         </div>
         <div id="fillblank" class="tab-content">
             <div class="quiz-container" id="fillblank-quiz">
-                <div class="completion-message"><h2>填空练习</h2><button class="quiz-btn" onclick="startFillBlank()">开始练习</button></div>
+                <div class="completion-message"><h2>📝 填空练习</h2><button class="quiz-btn" onclick="startFillBlank()">开始练习</button></div>
             </div>
         </div>
         <div id="translate" class="tab-content">
             <div class="quiz-container" id="translate-quiz">
-                <div class="completion-message"><h2>翻译练习</h2><button class="quiz-btn" onclick="startTranslate()">开始练习</button></div>
+                <div class="completion-message"><h2>🌐 翻译练习</h2><button class="quiz-btn" onclick="startTranslate()">开始练习</button></div>
             </div>
         </div>
     </div>
