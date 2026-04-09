@@ -2,87 +2,219 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>综合练习 - 英语学习</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #eee; }
-        h1 { color: #333; }
-        .back-btn { background: #667eea; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; }
-        .mode-selector { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
-        .mode-btn { flex: 1; min-width: 120px; padding: 15px; background: #f0f0f0; border: 2px solid transparent; border-radius: 10px; cursor: pointer; text-align: center; }
-        .mode-btn.active { background: #667eea; color: white; }
-        .quiz-container { background: #f8f9fa; padding: 40px; border-radius: 15px; min-height: 350px; text-align: center; }
-        .quiz-progress { margin-bottom: 20px; color: #667eea; font-size: 1.2em; }
-        .quiz-question { font-size: 1.6em; margin: 30px 0; color: #333; }
-        .quiz-input { width: 100%; max-width: 450px; padding: 18px; border: 2px solid #ddd; border-radius: 12px; font-size: 1.3em; text-align: center; margin: 20px 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; 
+            padding: 10px;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 16px; 
+            padding: 25px 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        h1 { 
+            color: #333; 
+            font-size: clamp(1.3rem, 5vw, 1.8rem);
+        }
+        .back-btn { 
+            background: #667eea; 
+            color: white; 
+            padding: 10px 18px;
+            border-radius: 8px; 
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .mode-selector { 
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .mode-btn { 
+            padding: 15px 10px;
+            background: #f0f0f0; 
+            border: 2px solid transparent;
+            border-radius: 10px; 
+            cursor: pointer; 
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .mode-btn.active { 
+            background: #667eea; 
+            color: white; 
+        }
+        .quiz-container { 
+            background: #f8f9fa; 
+            padding: 25px 15px;
+            border-radius: 12px;
+            min-height: 300px;
+            text-align: center;
+        }
+        .quiz-progress { 
+            margin-bottom: 15px; 
+            color: #667eea; 
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .quiz-question { 
+            font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+            margin: 20px 0; 
+            color: #333;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .quiz-input { 
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd; 
+            border-radius: 10px; 
+            font-size: 1.1rem;
+            text-align: center; 
+            margin: 15px 0;
+            -webkit-appearance: none;
+        }
         .quiz-input.correct { border-color: #28a745; background: #d4edda; }
         .quiz-input.wrong { border-color: #dc3545; background: #f8d7da; }
-        .quiz-btn { background: #667eea; color: white; border: none; padding: 15px 40px; border-radius: 10px; cursor: pointer; font-size: 1.1em; margin: 10px; }
+        .quiz-btn { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 14px 35px;
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 1.05rem;
+            margin: 8px 5px;
+            font-weight: 500;
+            min-width: 120px;
+        }
+        .quiz-btn:active { transform: scale(0.96); }
         .quiz-btn.hint-btn { background: #ffc107; color: #333; }
-        .quiz-feedback { margin-top: 20px; padding: 15px; border-radius: 10px; font-size: 1.1em; display: none; }
+        .quiz-btn.secondary { background: #6c757d; }
+        .quiz-feedback { 
+            margin-top: 15px; 
+            padding: 12px;
+            border-radius: 8px; 
+            font-size: 1rem;
+            display: none; 
+        }
         .quiz-feedback.show { display: block; }
         .quiz-feedback.correct { background: #d4edda; color: #155724; }
         .quiz-feedback.wrong { background: #f8d7da; color: #721c24; }
-        .lesson-tag { display: inline-block; background: #667eea; color: white; padding: 4px 12px; border-radius: 4px; font-size: 0.8em; margin-left: 10px; }
+        .lesson-tag { 
+            display: inline-block; 
+            background: #667eea; 
+            color: white; 
+            padding: 4px 10px;
+            border-radius: 4px; 
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
         .mode-toggle { margin-bottom: 20px; }
-        .mode-toggle button { padding: 10px 20px; margin: 0 5px; border: 2px solid #667eea; background: white; color: #667eea; border-radius: 8px; cursor: pointer; }
+        .mode-toggle button { 
+            padding: 10px 18px;
+            margin: 0 4px; 
+            border: 2px solid #667eea; 
+            background: white; 
+            color: #667eea; 
+            border-radius: 8px; 
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
         .mode-toggle button.active { background: #667eea; color: white; }
-        .completion-message { text-align: center; padding: 40px; }
-        .completion-message h2 { color: #28a745; margin-bottom: 20px; }
-        .stars { font-size: 3em; margin: 20px 0; }
-        .answer-display { font-size: 1.3em; color: #667eea; font-weight: bold; margin: 15px 0; padding: 15px; background: #e7e9ff; border-radius: 8px; }
-        .hint-text { color: #888; font-size: 0.9em; margin: 10px 0; display: none; }
+        .completion-message { text-align: center; padding: 30px 15px; }
+        .completion-message h2 { 
+            color: #28a745; 
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        .stars { font-size: 2.5rem; margin: 15px 0; }
+        .answer-display { 
+            font-size: 1.2rem;
+            color: #667eea; 
+            font-weight: bold; 
+            margin: 12px 0; 
+            padding: 15px;
+            background: #e7e9ff; 
+            border-radius: 8px;
+            word-break: break-word;
+        }
+        .hint-text { color: #888; font-size: 0.9rem; margin: 10px 0; display: none; }
         .hint-text.show { display: block; }
+
+        @media (min-width: 600px) {
+            .mode-selector { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { padding: 40px; border-radius: 20px; }
+            .quiz-container { padding: 40px; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>综合练习</h1>
-            <a href="index.html" class="back-btn">返回首页</a>
+            <a href="index.html" class="back-btn">← 返回</a>
         </div>
         <div class="mode-selector">
-            <button class="mode-btn" onclick="setMode('dictation')">单词默写</button>
-            <button class="mode-btn" onclick="setMode('fillblank')">填空练习</button>
-            <button class="mode-btn" onclick="setMode('translate')">翻译练习</button>
+            <button class="mode-btn" id="btn-dictation" onclick="setMode('dictation')">单词默写</button>
+            <button class="mode-btn" id="btn-fillblank" onclick="setMode('fillblank')">填空练习</button>
+            <button class="mode-btn" id="btn-translate" onclick="setMode('translate')">翻译练习</button>
         </div>
         <div class="quiz-container" id="quiz-area">
-            <div style="text-align:center;padding:40px;">
-                <h2>欢迎来到综合练习</h2>
-                <p style="margin:20px 0;color:#666;">请从上方选择一种练习模式开始</p>
-                <p style="color:#999;">所有题目都来自你的学习资料</p>
+            <div style="text-align:center;padding:40px 20px;">
+                <h2 style="margin-bottom:15px;">欢迎来到综合练习</h2>
+                <p style="margin:15px 0;color:#666;">请从上方选择一种练习模式开始</p>
+                <p style="color:#999;font-size:0.9rem;">所有题目都来自你的学习资料</p>
             </div>
         </div>
     </div>
     <script>
+        // 错题管理器
         const WrongAnswersManager = {
-            STORAGE_KEYS: ['english_learning_wrong_answers_l1', 'english_learning_wrong_answers_l2', 'english_learning_wrong_answers_l3'],
-            getAllWrong() {
-                let all = [];
-                this.STORAGE_KEYS.forEach(key => {
-                    const data = localStorage.getItem(key);
-                    if (data) { const parsed = JSON.parse(data); all = all.concat(Object.values(parsed)); }
-                });
-                return all;
+            getStorageKey(lesson) { return `english_learning_wrong_answers_l${lesson}`; },
+            save(wrongItem, lessonNum) {
+                const key = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
+                const storageKey = this.getStorageKey(lessonNum);
+                const all = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                if (!all[key]) { all[key] = { ...wrongItem, correctCount: 0, lastWrong: Date.now(), lesson: lessonNum }; }
+                localStorage.setItem(storageKey, JSON.stringify(all));
             },
-            recordCorrect(wrongItem) {
-                this.STORAGE_KEYS.forEach(key => {
-                    const data = localStorage.getItem(key);
-                    if (data) {
-                        const all = JSON.parse(data);
-                        const itemKey = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
-                        if (all[itemKey]) {
-                            all[itemKey].correctCount++;
-                            if (all[itemKey].correctCount >= 5) { delete all[itemKey]; }
-                            localStorage.setItem(key, JSON.stringify(all));
-                        }
-                    }
-                });
+            recordCorrect(wrongItem, lessonNum) {
+                const key = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
+                const storageKey = this.getStorageKey(lessonNum);
+                const all = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                if (all[key]) { 
+                    all[key].correctCount++; 
+                    if (all[key].correctCount >= 5) { delete all[key]; } 
+                    localStorage.setItem(storageKey, JSON.stringify(all)); 
+                }
             }
         };
 
+        // 课程数据
         const allData = {
             lesson1: {
                 vocab: [
@@ -134,61 +266,90 @@
             }
         };
 
-        function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
-        let currentMode = '', currentQuestions = [], currentIndex = 0, wrongAttempts = 0, score = 0, dictationMode = 'cn2en';
+        let currentMode = '';
+        let dictationMode = 'cn2en';
+        let currentQuestions = [], currentIndex = 0, wrongAttempts = 0, score = 0;
 
+        function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+        // 设置练习模式
         function setMode(mode) {
             currentMode = mode;
+            
+            // 更新按钮状态
             document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            if (mode === 'dictation') showDictationStart();
-            if (mode === 'fillblank') startFillBlank();
-            if (mode === 'translate') startTranslate();
+            document.getElementById('btn-' + mode).classList.add('active');
+            
+            // 开始对应练习
+            if (mode === 'dictation') {
+                showDictationStart();
+            } else if (mode === 'fillblank') {
+                startFillBlank();
+            } else if (mode === 'translate') {
+                startTranslate();
+            }
         }
+
+        // 单词默写 - 选择模式
         function showDictationStart() {
             document.getElementById('quiz-area').innerHTML = 
-                '<div class="mode-toggle"><button class="active" onclick="setDictationMode(' + "'cn2en'" + ')">中译英</button>' +
-                '<button onclick="setDictationMode(' + "'en2cn'" + ')">英译中</button></div>' +
-                '<div style="text-align:center;padding:40px;"><h2>单词默写</h2><p style="color:#666;margin:20px 0;">选择模式后自动开始</p></div>';
+                '<div class="mode-toggle">' +
+                '<button class="active" onclick="setDictationMode(' + "'cn2en'" + ')">中译英</button>' +
+                '<button onclick="setDictationMode(' + "'en2cn'" + ')">英译中</button>' +
+                '</div>' +
+                '<div style="text-align:center;padding:30px 20px;">' +
+                '<h3>单词默写</h3>' +
+                '<p style="color:#666;margin:15px 0;">选择模式后开始练习</p>' +
+                '</div>';
             setTimeout(startDictation, 100);
         }
+
         function setDictationMode(mode) {
             dictationMode = mode;
             document.querySelectorAll('.mode-toggle button').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             startDictation();
         }
+
         function startDictation() {
             const allVocab = [
-                ...allData.lesson1.vocab.map(v => ({...v, lesson: 'L1'})),
-                ...allData.lesson2.vocab.map(v => ({...v, lesson: 'L2'})),
-                ...allData.lesson3.vocab.map(v => ({...v, lesson: 'L3'}))
+                ...allData.lesson1.vocab.map(v => ({...v, lesson: 1})),
+                ...allData.lesson2.vocab.map(v => ({...v, lesson: 2})),
+                ...allData.lesson3.vocab.map(v => ({...v, lesson: 3}))
             ];
             currentQuestions = shuffle(allVocab).slice(0, 10);
             currentIndex = 0; score = 0;
             showDictationQuestion();
         }
+
         function showDictationQuestion() {
-            if (currentIndex >= currentQuestions.length) { showCompletion(score, currentQuestions.length); return; }
+            if (currentIndex >= currentQuestions.length) { 
+                showCompletion(score, currentQuestions.length); 
+                return; 
+            }
             wrongAttempts = 0;
             const q = currentQuestions[currentIndex];
             const prompt = dictationMode === 'cn2en' ? q.cn : q.en;
             const answer = dictationMode === 'cn2en' ? q.en : q.cn;
+            
             document.getElementById('quiz-area').innerHTML = 
                 '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
-                '<div class="quiz-question">' + (dictationMode === 'cn2en' ? '请输入英文：' : '请输入中文：') + '<br><br><strong>' + prompt + '</strong><span class="lesson-tag">' + q.lesson + '</span></div>' +
+                '<div class="quiz-question">' + (dictationMode === 'cn2en' ? '请输入英文：' : '请输入中文：') + '<br><br><strong>' + prompt + '</strong><span class="lesson-tag">L' + q.lesson + '</span></div>' +
                 '<input type="text" class="quiz-input" id="answer-input" placeholder="请输入答案">' +
                 '<br><button class="quiz-btn" onclick="checkDictationAnswer()">提交答案</button>' +
                 '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            
             document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkDictationAnswer(); };
             setTimeout(() => document.getElementById('answer-input').focus(), 100);
         }
+
         function checkDictationAnswer() {
             const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
             const q = currentQuestions[currentIndex];
             const correctAnswer = dictationMode === 'cn2en' ? q.en : q.cn;
             const userAnswer = input.value.trim();
             if (!userAnswer) return;
+            
             if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
                 score++;
                 input.className = 'quiz-input correct'; input.disabled = true;
@@ -200,38 +361,48 @@
                 feedback.className = 'quiz-feedback show wrong';
                 feedback.textContent = '❌ 回答错误（第' + wrongAttempts + '次尝试）';
                 input.value = ''; input.focus();
+                WrongAnswersManager.save({type: 'dictation', q: prompt, a: correctAnswer, lesson: 'L' + q.lesson}, q.lesson);
                 if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + correctAnswer.replace(/'/g, "\\'") + "'" + ')">💡 显示答案</button>';
             }
         }
+
         function startFillBlank() {
             const allQ = [
-                ...allData.lesson1.fillBlank.map(q => ({...q, lesson: 'L1'})),
-                ...allData.lesson2.fillBlank.map(q => ({...q, lesson: 'L2'})),
-                ...allData.lesson3.fillBlank.map(q => ({...q, lesson: 'L3'}))
+                ...allData.lesson1.fillBlank.map(q => ({...q, lesson: 1})),
+                ...allData.lesson2.fillBlank.map(q => ({...q, lesson: 2})),
+                ...allData.lesson3.fillBlank.map(q => ({...q, lesson: 3}))
             ];
             currentQuestions = shuffle(allQ).slice(0, 10);
             currentIndex = 0; score = 0;
             showFillBlankQuestion();
         }
+
         function showFillBlankQuestion() {
-            if (currentIndex >= currentQuestions.length) { showCompletion(score, currentQuestions.length); return; }
+            if (currentIndex >= currentQuestions.length) { 
+                showCompletion(score, currentQuestions.length); 
+                return; 
+            }
             wrongAttempts = 0;
             const q = currentQuestions[currentIndex];
+            
             document.getElementById('quiz-area').innerHTML = 
                 '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
-                '<div class="quiz-question">' + q.q.replace('___', '_____') + '<span class="lesson-tag">' + q.lesson + '</span></div>' +
+                '<div class="quiz-question">' + q.q.replace('___', '_____') + '<span class="lesson-tag">L' + q.lesson + '</span></div>' +
                 '<div class="hint-text" id="hint-text">💡 提示：' + q.hint + '</div>' +
                 '<input type="text" class="quiz-input" id="answer-input" placeholder="填入正确答案">' +
                 '<br><button class="quiz-btn" onclick="checkFillBlankAnswer()">提交答案</button>' +
                 '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            
             document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkFillBlankAnswer(); };
             setTimeout(() => document.getElementById('answer-input').focus(), 100);
         }
+
         function checkFillBlankAnswer() {
             const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback'), hintText = document.getElementById('hint-text');
             const q = currentQuestions[currentIndex];
             const userAnswer = input.value.trim().toLowerCase();
             if (!userAnswer) return;
+            
             const isCorrect = userAnswer === q.a.toLowerCase() || (q.a === 'cannot' && (userAnswer === "can't" || userAnswer === 'can not'));
             if (isCorrect) {
                 score++;
@@ -245,37 +416,54 @@
                 feedback.textContent = '❌ 回答错误（第' + wrongAttempts + '次尝试）';
                 hintText.classList.add('show');
                 input.value = ''; input.focus();
-                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + q.a + "'" + ')">💡 显示答案</button>';
+                WrongAnswersManager.save({type: 'fillblank', q: q.q, a: q.a, hint: q.hint, lesson: 'L' + q.lesson}, q.lesson);
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showFillBlankAnswer()">💡 显示答案</button>';
             }
         }
+
+        function showFillBlankAnswer() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">正确答案：' + q.a + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showFillBlankQuestion(); }, 5000);
+        }
+
         function startTranslate() {
             const allQ = [
-                ...allData.lesson1.translate.map(q => ({...q, lesson: 'L1'})),
-                ...allData.lesson2.translate.map(q => ({...q, lesson: 'L2'})),
-                ...allData.lesson3.translate.map(q => ({...q, lesson: 'L3'}))
+                ...allData.lesson1.translate.map(q => ({...q, lesson: 1})),
+                ...allData.lesson2.translate.map(q => ({...q, lesson: 2})),
+                ...allData.lesson3.translate.map(q => ({...q, lesson: 3}))
             ];
             currentQuestions = shuffle(allQ).slice(0, 10);
             currentIndex = 0; score = 0;
             showTranslateQuestion();
         }
+
         function showTranslateQuestion() {
-            if (currentIndex >= currentQuestions.length) { showCompletion(score, currentQuestions.length); return; }
+            if (currentIndex >= currentQuestions.length) { 
+                showCompletion(score, currentQuestions.length); 
+                return; 
+            }
             wrongAttempts = 0;
             const q = currentQuestions[currentIndex];
+            
             document.getElementById('quiz-area').innerHTML = 
                 '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
-                '<div class="quiz-question">请将以下中文翻译成英文：<br><br><strong>"' + q.cn + '"</strong><span class="lesson-tag">' + q.lesson + '</span></div>' +
+                '<div class="quiz-question">请将以下中文翻译成英文：<br><br><strong>"' + q.cn + '"</strong><span class="lesson-tag">L' + q.lesson + '</span></div>' +
                 '<textarea class="quiz-input" id="answer-input" rows="3" placeholder="请输入英文翻译"></textarea>' +
                 '<br><button class="quiz-btn" onclick="checkTranslateAnswer()">提交答案</button>' +
                 '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            
             setTimeout(() => document.getElementById('answer-input').focus(), 100);
         }
+
         function checkTranslateAnswer() {
             const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
             const q = currentQuestions[currentIndex];
-            const userAnswer = input.value.trim().toLowerCase().replace(/[^a-z\s]/g, '');
-            const correctAnswer = q.en.toLowerCase().replace(/[^a-z\s]/g, '');
+            const userAnswer = input.value.trim().toLowerCase().replace(/[^a-z\\s]/g, '');
+            const correctAnswer = q.en.toLowerCase().replace(/[^a-z\\s]/g, '');
             if (!userAnswer) return;
+            
             if (userAnswer === correctAnswer) {
                 score++;
                 input.className = 'quiz-input correct'; input.disabled = true;
@@ -286,25 +474,40 @@
                 input.className = 'quiz-input wrong';
                 feedback.className = 'quiz-feedback show wrong';
                 feedback.textContent = '❌ 回答错误（第' + wrongAttempts + '次尝试）';
-                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + q.en + "'" + ')">💡 显示答案</button>';
+                WrongAnswersManager.save({type: 'translate', cn: q.cn, en: q.en, lesson: 'L' + q.lesson}, q.lesson);
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showTranslateAnswer()">💡 显示答案</button>';
             }
         }
+
+        function showTranslateAnswer() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">参考答案：' + q.en + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showTranslateQuestion(); }, 5000);
+        }
+
         function showAnswer(answer) {
             document.getElementById('feedback').innerHTML = '<div class="answer-display">正确答案：' + answer + '</div>';
             document.getElementById('feedback').className = 'quiz-feedback show';
-            setTimeout(() => { currentIndex++; 
+            setTimeout(() => { 
+                currentIndex++; 
                 if (currentMode === 'dictation') showDictationQuestion();
-                else if (currentMode === 'fillblank') showFillBlankQuestion();
-                else if (currentMode === 'translate') showTranslateQuestion();
             }, 5000);
         }
+
         function showCompletion(score, total) {
             const percentage = Math.round(score / total * 100);
             let stars = '⭐';
             if (percentage >= 60) stars = '⭐⭐';
             if (percentage >= 80) stars = '⭐⭐⭐';
             if (percentage === 100) stars = '🏆⭐⭐⭐🏆';
-            document.getElementById('quiz-area').innerHTML = '<div class="completion-message"><h2>🎉 练习完成！</h2><div class="stars">' + stars + '</div><p style="font-size:1.3em;">得分：' + score + ' / ' + total + ' (' + percentage + '%)</p><button class="quiz-btn" onclick="location.reload()">再来一次</button></div>';
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="completion-message">' +
+                '<h2>🎉 练习完成！</h2>' +
+                '<div class="stars">' + stars + '</div>' +
+                '<p style="font-size:1.3em;">得分：' + score + ' / ' + total + ' (' + percentage + '%)</p>' +
+                '<button class="quiz-btn" onclick="location.reload()">再来一次</button>' +
+                '</div>';
         }
     </script>
 </body>
