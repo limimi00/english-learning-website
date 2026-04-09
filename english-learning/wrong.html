@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>错题练习 - 英语学习</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #eee; }
+        h1 { color: #333; }
+        .back-btn { background: #ff6b6b; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; }
+        .stats { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+        .stat-card { flex: 1; min-width: 150px; background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; }
+        .stat-card .number { font-size: 2em; font-weight: bold; color: #ff6b6b; }
+        .stat-card .label { color: #666; font-size: 0.9em; }
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .mode-btn { flex: 1; min-width: 100px; padding: 12px; background: #f0f0f0; border: 2px solid transparent; border-radius: 10px; cursor: pointer; text-align: center; font-size: 0.95em; }
+        .mode-btn.active { background: #ff6b6b; color: white; }
+        .quiz-container { background: #f8f9fa; padding: 40px; border-radius: 15px; min-height: 350px; text-align: center; }
+        .quiz-progress { margin-bottom: 20px; color: #ff6b6b; font-size: 1.2em; }
+        .quiz-question { font-size: 1.6em; margin: 30px 0; color: #333; }
+        .quiz-input { width: 100%; max-width: 450px; padding: 18px; border: 2px solid #ddd; border-radius: 12px; font-size: 1.3em; text-align: center; margin: 20px 0; }
+        .quiz-input.correct { border-color: #28a745; background: #d4edda; }
+        .quiz-input.wrong { border-color: #dc3545; background: #f8d7da; }
+        .quiz-btn { background: #ff6b6b; color: white; border: none; padding: 15px 40px; border-radius: 10px; cursor: pointer; font-size: 1.1em; margin: 10px; }
+        .quiz-btn.hint-btn { background: #ffc107; color: #333; }
+        .quiz-btn.clear-btn { background: #6c757d; }
+        .quiz-feedback { margin-top: 20px; padding: 15px; border-radius: 10px; font-size: 1.1em; display: none; }
+        .quiz-feedback.show { display: block; }
+        .quiz-feedback.correct { background: #d4edda; color: #155724; }
+        .quiz-feedback.wrong { background: #f8d7da; color: #721c24; }
+        .quiz-feedback.hint { background: #fff3cd; color: #856404; }
+        .lesson-tag { display: inline-block; background: #ff6b6b; color: white; padding: 4px 12px; border-radius: 4px; font-size: 0.8em; margin-left: 10px; }
+        .progress-tag { display: inline-block; background: #28a745; color: white; padding: 4px 12px; border-radius: 4px; font-size: 0.8em; margin-left: 10px; }
+        .completion-message { text-align: center; padding: 40px; }
+        .completion-message h2 { color: #28a745; margin-bottom: 20px; }
+        .empty-message { text-align: center; padding: 60px 40px; }
+        .empty-message h2 { color: #28a745; margin-bottom: 20px; }
+        .stars { font-size: 3em; margin: 20px 0; }
+        .answer-display { font-size: 1.3em; color: #ff6b6b; font-weight: bold; margin: 15px 0; padding: 15px; background: #ffe0e0; border-radius: 8px; }
+        .hint-text { color: #888; font-size: 0.9em; margin: 10px 0; display: none; }
+        .hint-text.show { display: block; }
+        .mode-toggle { margin-bottom: 20px; }
+        .mode-toggle button { padding: 10px 20px; margin: 0 5px; border: 2px solid #ff6b6b; background: white; color: #ff6b6b; border-radius: 8px; cursor: pointer; }
+        .mode-toggle button.active { background: #ff6b6b; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 错题练习</h1>
+            <a href="index.html" class="back-btn">返回首页</a>
+        </div>
+        
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="number" id="total-wrong">0</div>
+                <div class="label">错题总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="mastered">0</div>
+                <div class="label">已掌握</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="remaining">0</div>
+                <div class="label">待练习</div>
+            </div>
+        </div>
+        
+        <div class="mode-selector" id="mode-selector" style="display:none;">
+            <button class="mode-btn" onclick="setMode('dictation')">单词默写</button>
+            <button class="mode-btn" onclick="setMode('fillblank')">填空练习</button>
+            <button class="mode-btn" onclick="setMode('translate')">翻译练习</button>
+            <button class="mode-btn" onclick="setMode('all')">全部错题</button>
+        </div>
+        
+        <div class="quiz-container" id="quiz-area">
+            <div class="empty-message">
+                <h2>🎉 太棒了！</h2>
+                <p style="color:#666;margin:20px 0;">你目前还没有错题</p>
+                <p style="color:#999;">继续加油，保持好习惯！</p>
+                <button class="quiz-btn clear-btn" onclick="clearAllWrong()" style="margin-top:20px;">清除所有错题记录</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const WrongAnswersManager = {
+            STORAGE_KEYS: ['english_learning_wrong_answers_l1', 'english_learning_wrong_answers_l2', 'english_learning_wrong_answers_l3'],
+            getAllWrong() {
+                let all = [];
+                this.STORAGE_KEYS.forEach(key => {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        const parsed = JSON.parse(data);
+                        Object.entries(parsed).forEach(([k, v]) => {
+                            all.push({...v, key: k, storageKey: key});
+                        });
+                    }
+                });
+                return all;
+            },
+            recordCorrect(wrongItem) {
+                this.STORAGE_KEYS.forEach(key => {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        const all = JSON.parse(data);
+                        const itemKey = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
+                        if (all[itemKey]) {
+                            all[itemKey].correctCount++;
+                            if (all[itemKey].correctCount >= 5) { delete all[itemKey]; }
+                            localStorage.setItem(key, JSON.stringify(all));
+                        }
+                    }
+                });
+            },
+            clearAll() {
+                this.STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
+            },
+            getStats() {
+                const all = this.getAllWrong();
+                const mastered = all.filter(item => item.correctCount > 0).length;
+                return { total: all.length, mastered: mastered, remaining: all.length };
+            }
+        };
+
+        let currentMode = '', currentQuestions = [], currentIndex = 0, wrongAttempts = 0, score = 0, dictationMode = 'cn2en';
+
+        function init() {
+            const stats = WrongAnswersManager.getStats();
+            document.getElementById('total-wrong').textContent = stats.total;
+            document.getElementById('mastered').textContent = stats.mastered;
+            document.getElementById('remaining').textContent = stats.remaining;
+            
+            if (stats.total > 0) {
+                document.getElementById('mode-selector').style.display = 'flex';
+                document.getElementById('quiz-area').innerHTML = '<div style="text-align:center;padding:40px;"><h2>选择练习模式</h2><p style="color:#666;margin:20px 0;">从上方选择错题类型开始练习</p></div>';
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            startPractice();
+        }
+
+        function startPractice() {
+            let allWrong = WrongAnswersManager.getAllWrong();
+            if (currentMode !== 'all') {
+                allWrong = allWrong.filter(item => item.type === currentMode);
+            }
+            if (allWrong.length === 0) {
+                document.getElementById('quiz-area').innerHTML = '<div class="completion-message"><h2>🎉 该类型没有错題！</h2><p style="color:#666;margin:20px 0;">继续保持！</p><button class="quiz-btn" onclick="location.reload()">返回</button></div>';
+                return;
+            }
+            currentQuestions = shuffle(allWrong);
+            currentIndex = 0; score = 0;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentIndex >= currentQuestions.length) { showCompletion(); return; }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            
+            if (q.type === 'dictation') {
+                showDictationQuestion(q);
+            } else if (q.type === 'fillblank') {
+                showFillBlankQuestion(q);
+            } else if (q.type === 'translate') {
+                showTranslateQuestion(q);
+            } else if (q.type === 'pronoun') {
+                showPronounQuestion(q);
+            }
+        }
+
+        function showDictationQuestion(q) {
+            const prompt = q.q || q.cn;
+            const answer = q.a || q.en;
+            const progressTag = q.correctCount > 0 ? '<span class="progress-tag">已正确' + q.correctCount + '/5次</span>' : '';
+            
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">请输入英文：<br><br><strong>' + prompt + '</strong><span class="lesson-tag">' + (q.lesson || 'L?') + '</span>' + progressTag + '</div>' +
+                '<input type="text" class="quiz-input" id="answer-input" placeholder="请输入答案">' +
+                '<br><button class="quiz-btn" onclick="checkDictationAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkDictationAnswer(); };
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+
+        function checkDictationAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
+            const q = currentQuestions[currentIndex];
+            const correctAnswer = q.a || q.en;
+            const userAnswer = input.value.trim();
+            if (!userAnswer) return;
+            
+            if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+                score++;
+                WrongAnswersManager.recordCorrect(q);
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct';
+                feedback.textContent = '✅ 回答正确！（已连续正确' + ((q.correctCount || 0) + 1) + '次，5次后将从错题本移除）';
+                setTimeout(() => { currentIndex++; showQuestion(); }, 1500);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '❌ 回答错误（第' + wrongAttempts + '次尝试）';
+                input.value = ''; input.focus();
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + correctAnswer.replace(/'/g, "\\'") + "'" + ')">💡 显示答案</button>';
+            }
+        }
+
+        function showFillBlankQuestion(q) {
+            const progressTag = q.correctCount > 0 ? '<span class="progress-tag">已正确' + q.correctCount + '/5次</span>' : '';
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">' + q.q.replace('___', '_____') + '<span class="lesson-tag">' + (q.lesson || 'L?') + '</span>' + progressTag + '</div>' +
+                '<div class="hint-text" id="hint-text">💡 提示：' + (q.hint || '') + '</div>' +
+                '<input type="text" class="quiz-input" id="answer-input" placeholder="填入正确答案">' +
+                '<br><button class="quiz-btn" onclick="checkFillBlankAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkFillBlankAnswer(); };
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+
+        function checkFillBlankAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback'), hintText = document.getElementById('hint-text');
+            const q = currentQuestions[currentIndex];
+            const userAnswer = input.value.trim().toLowerCase();
+            if (!userAnswer) return;
+            
+            const isCorrect = userAnswer === q.a.toLowerCase() || (q.a === 'cannot' && (userAnswer === "can't" || userAnswer === 'can not'));
+            if (isCorrect) {
+                score++;
+                WrongAnswersManager.recordCorrect(q);
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct';
+                feedback.textContent = '✅ 回答正确！（已连续正确' + ((q.correctCount || 0) + 1) + '次）';
+                setTimeout(() => { currentIndex++; showQuestion(); }, 1500);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '❌ 回答错误（第' + wrongAttempts + '次尝试）';
+                hintText.classList.add('show');
+                input.value = ''; input.focus();
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + q.a + "'" + ')">💡 显示答案</button>';
+            }
+        }
+
+        function showTranslateQuestion(q) {
+            const progressTag = q.correctCount > 0 ? '<span class="progress-tag">已正确' + q.correctCount + '/5次</span>' : '';
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">请将以下中文翻译成英文：<br><br><strong>"' + q.cn + '"</strong><span class="lesson-tag">' + (q.lesson || 'L?') + '</span>' + progressTag + '</div>' +
+                '<textarea class="quiz-input" id="answer-input" rows="3" placeholder="请输入英文翻译"></textarea>' +
+                '<br><button class="quiz-btn" onclick="checkTranslateAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+
+        function checkTranslateAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
+            const q = currentQuestions[currentIndex];
+            const userAnswer = input.value.trim().toLowerCase().replace(/[^a-z\s]/g, '');
+            const correctAnswer = q.en.toLowerCase().replace(/[^a-z\s]/g, '');
+            if (!userAnswer) return;
+            
+            if (userAnswer === correctAnswer) {
+                score++;
+                WrongAnswersManager.recordCorrect(q);
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct';
+                feedback.textContent = '✅ 回答正确！（已连续正确' + ((q.correctCount || 0) + 1) + '次）';
+                setTimeout(() => { currentIndex++; showQuestion(); }, 1500);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '❌ 回答错误（第' + wrongAttempts + '次尝试）';
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + q.en + "'" + ')">💡 显示答案</button>';
+            }
+        }
+
+        function showAnswer(answer) {
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">正确答案：' + answer + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show hint';
+            setTimeout(() => { currentIndex++; showQuestion(); }, 5000);
+        }
+
+        function showCompletion() {
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="completion-message">' +
+                '<h2>🎉 错题练习完成！</h2>' +
+                '<p style="font-size:1.2em;color:#333;margin:20px 0;">本次答对：' + score + ' / ' + currentQuestions.length + '</p>' +
+                '<p style="color:#666;">每道题连续答对5次后将自动从错题本移除</p>' +
+                '<button class="quiz-btn" onclick="location.reload()" style="margin-top:20px;">继续练习</button>' +
+                '</div>';
+            init();
+        }
+
+        function clearAllWrong() {
+            if (confirm('确定要清除所有错题记录吗？')) {
+                WrongAnswersManager.clearAll();
+                location.reload();
+            }
+        }
+
+        function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+        init();
+    </script>
+</body>
+</html>

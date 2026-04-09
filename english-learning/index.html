@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语学习网站</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        .lessons { display: grid; gap: 20px; }
+        .lesson-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-decoration: none;
+            display: block;
+        }
+        .lesson-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .lesson-card h2 { font-size: 1.8em; margin-bottom: 10px; }
+        .lesson-card p { opacity: 0.9; line-height: 1.6; }
+        .lesson-card .topics { margin-top: 15px; font-size: 0.9em; opacity: 0.8; }
+        
+        .wrong-card {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%) !important;
+            position: relative;
+        }
+        .wrong-card:hover { box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4) !important; }
+        .wrong-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            color: #ff6b6b;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            display: none;
+        }
+        .wrong-badge.show { display: block; }
+        
+        .practice-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+        .practice-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .practice-modes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .practice-btn {
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: #667eea;
+        }
+        .practice-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        .practice-btn .icon { font-size: 2em; margin-bottom: 10px; }
+        
+        .wrong-practice-btn {
+            background: #fff5f5;
+            border: 2px solid #ff6b6b;
+            color: #ff6b6b;
+        }
+        .wrong-practice-btn:hover {
+            background: #ff6b6b;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 英语学习网站</h1>
+        <p class="subtitle">基于你的学习资料，全面提升英语能力</p>
+        
+        <div class="lessons">
+            <a href="lesson1.html" class="lesson-card">
+                <h2>📚 Lesson 1 - am / is / are</h2>
+                <p>学习 be 动词的基本用法，掌握人称与动词的搭配</p>
+                <div class="topics">词汇：人物、形容词、地点、国家 | 句型：肯定句、否定句、疑问句</div>
+            </a>
+            
+            <a href="lesson2.html" class="lesson-card">
+                <h2>📚 Lesson 2 - do / does / have / has</h2>
+                <p>学习一般现在时，动词短语和日常对话</p>
+                <div class="topics">词汇：日常活动、职业、家庭 | 句型：Do/Does 疑问句、Have/Has 用法</div>
+            </a>
+            
+            <a href="lesson3.html" class="lesson-card">
+                <h2>📚 Lesson 3 - can / 第三人称单数</h2>
+                <p>学习表达能力、许可和更多日常用语</p>
+                <div class="topics">词汇：活动、场所、工作 | 句型：Can 的用法、代词宾格</div>
+            </a>
+            
+            <a href="wrong.html" class="lesson-card wrong-card">
+                <span class="wrong-badge" id="wrong-count">0</span>
+                <h2>📝 错题练习</h2>
+                <p>针对性练习你的错题，巩固薄弱环节</p>
+                <div class="topics">自动收集错题 · 连续5次正确后自动移除</div>
+            </a>
+        </div>
+        
+        <div class="practice-section">
+            <h3>🎯 综合练习</h3>
+            <div class="practice-modes">
+                <a href="practice.html?mode=dictation" class="practice-btn">
+                    <div class="icon">✍️</div>
+                    <div>单词默写</div>
+                </a>
+                <a href="practice.html?mode=fillblank" class="practice-btn">
+                    <div class="icon">📝</div>
+                    <div>填空练习</div>
+                </a>
+                <a href="practice.html?mode=translate" class="practice-btn">
+                    <div class="icon">🌐</div>
+                    <div>翻译练习</div>
+                </a>
+                <a href="wrong.html" class="practice-btn wrong-practice-btn">
+                    <div class="icon">❌</div>
+                    <div>错题练习</div>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 更新错题数量
+        function updateWrongCount() {
+            const keys = ['english_learning_wrong_answers_l1', 'english_learning_wrong_answers_l2', 'english_learning_wrong_answers_l3'];
+            let count = 0;
+            keys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) count += Object.keys(JSON.parse(data)).length;
+            });
+            if (count > 0) {
+                document.getElementById('wrong-count').textContent = count;
+                document.getElementById('wrong-count').classList.add('show');
+            }
+        }
+        updateWrongCount();
+    </script>
+</body>
+</html>
