@@ -510,7 +510,7 @@
                 feedback.className = 'quiz-feedback show wrong';
                 feedback.textContent = '回答错误（第' + wrongAttempts + '次尝试）';
                 input.value = ''; input.focus();
-                WrongAnswersManager.save({type: 'dictation', q: prompt, a: correctAnswer, lesson: 'L3'});
+                const questionText = dictationMode === 'cn2en' ? q.cn : q.en; WrongAnswersManager.save({type: 'dictation', q: questionText, a: correctAnswer, lesson: 'L3'});
                 if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + correctAnswer.replace(/'/g, "\\'") + "'" + ')">显示答案</button>';
             }
         }
