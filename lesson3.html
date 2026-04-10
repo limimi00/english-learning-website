@@ -301,10 +301,30 @@
             <div id="can-examples"></div>
         </div>
         <div id="vocab" class="tab-content">
-            <h2>活动和场所</h2>
+            <h2>活动和场所 (Activities & Places)</h2>
             <div class="vocab-grid" id="vocab-activities"></div>
-            <h2>更多词汇</h2>
+            <h2>更多词汇 (More Words)</h2>
             <div class="vocab-grid" id="vocab-more"></div>
+            <h2>职业 (Jobs)</h2>
+            <div class="vocab-grid" id="vocab-jobs"></div>
+            <h2>情态动词 (Modal Verbs)</h2>
+            <div class="vocab-grid" id="vocab-modal"></div>
+            <h2>常用短语 (Common Phrases)</h2>
+            <div class="vocab-grid" id="vocab-phrases"></div>
+            <h2>地点 (Places)</h2>
+            <div class="vocab-grid" id="vocab-places"></div>
+            <h2>方位 (Directions)</h2>
+            <div class="vocab-grid" id="vocab-directions"></div>
+            <h2>饮品 (Drinks)</h2>
+            <div class="vocab-grid" id="vocab-drinks"></div>
+            <h2>艺术 (Art)</h2>
+            <div class="vocab-grid" id="vocab-art"></div>
+            <h2>时间 (Time)</h2>
+            <div class="vocab-grid" id="vocab-time"></div>
+            <h2>情感 (Feelings)</h2>
+            <div class="vocab-grid" id="vocab-feelings"></div>
+            <h2>其他 (Others)</h2>
+            <div class="vocab-grid" id="vocab-others"></div>
         </div>
         <div id="reading" class="tab-content">
             <h2>阅读材料</h2>
@@ -352,7 +372,7 @@
             }
         };
 
-        const lessonData = {
+                const lessonData = {
             activities: [
                 {en: 'cinema', cn: '电影院'}, {en: 'beach', cn: '海滩'},
                 {en: 'play tennis', cn: '打网球'}, {en: 'play the piano', cn: '弹钢琴'},
@@ -361,7 +381,11 @@
                 {en: 'policeman', cn: '警察'}, {en: 'birthday', cn: '生日'},
                 {en: 'angry', cn: '生气的'}, {en: 'restaurant', cn: '餐厅'},
                 {en: 'bar', cn: '酒吧'}, {en: 'give', cn: '给'},
-                {en: 'call', cn: '打电话'}, {en: 'draw', cn: '画画'}, {en: 'language', cn: '语言'}
+                {en: 'call', cn: '打电话'}, {en: 'draw', cn: '画画'}, {en: 'language', cn: '语言'},
+                {en: 'pasta', cn: '意大利面'}, {en: 'Italian', cn:'意大利的'}, {en: 'shower', cn: '淋浴'},
+                {en: 'gym', cn: '健身房'}, {en: 'evening', cn: '晚上'}, {en: 'sleep', cn: '睡觉'},
+                {en: 'office', cn: '办公室'}, {en: 'after work', cn: '下班后'},
+                {en: 'sushi', cn: '寿司'}, {en: 'Japanese', cn: '日本的'}, {en: 'stop', cn: '停止'}
             ],
             moreWords: [
                 {en: 'smoke cigarettes', cn: '抽烟'}, {en: 'change money', cn: '换钱'},
@@ -371,7 +395,58 @@
                 {en: 'come', cn: '来'}, {en: 'see', cn: '看见'},
                 {en: 'hear', cn: '听见'}, {en: 'help', cn: '帮助'},
                 {en: 'sit', cn: '坐'}, {en: 'tonight', cn: '今晚'},
-                {en: 'write', cn: '写'}, {en: 'museum', cn: '博物馆'}
+                {en: 'write', cn: '写'}, {en: 'museum', cn: '博物馆'},
+                {en: 'mobile phone', cn: '手机'}, {en: 'hospital', cn: '医院'}, {en: 'red wine', cn: '红酒'},
+                {en: 'football', cn: '足球'}, {en: 'shopping center', cn: '购物中心'}, {en: 'at night', cn: '在夜间'},
+                {en: 'that\'s why', cn: '那就是为什么'}
+            ],
+            jobs: [
+                {en: 'doctor', cn: '医生'}, {en: 'nurse', cn: '护士'}, {en: 'waiter', cn: '服务员(male)'}, {en: 'waitress', cn: '服务员(female)'},
+                {en: 'lawyer', cn: '律师'}, {en: 'factory worker', cn: '工厂工人'}, {en: 'programmer', cn: '程序员'},
+                {en: 'tourist', cn: '游客'}, {en: 'guide', cn: '向导'}, {en: 'singer', cn: '歌手'},
+                {en: 'soldier', cn: '士兵'}, {en: 'hairdresser', cn: '理发师'}, {en: 'shop assistant', cn: '店员'}
+            ],
+            modalVerbs: [{en:'can',cn:'能,可以'},{en:'cannot',cn:'不能,不可以'},{en:'can\'t',cn:'不能'}],
+            commonPhrases: [{en:'please',cn:'请'},{en:'thank you',cn:'谢谢你'},{en:'excuse me',cn:'打扰一下'},{en:'sure',cn:'当然'},{en:'of course',cn:'当然'},{en:'sorry',cn:'抱歉'},{en:'very much',cn:'非常'},{en:'really',cn:'真的'}],
+            places: [
+                {en: 'home', cn: '家'}, {en: 'street', cn: '街道'}, {en: 'village', cn: '村庄'},
+                {en: 'garden', cn: '花园'}, {en: 'night club', cn: '夜总会'}, {en: 'supermarket', cn: '超市'}
+            ],
+            directions: [
+                {en: 'north', cn: '北'}, {en: 'south', cn: '南'}, {en: 'west', cn: '西'}, {en: 'east', cn: '东'}
+            ],
+            drinks: [
+                {en: 'alcohol', cn: '酒精'}, {en: 'mineral water', cn: '矿泉水'}
+            ],
+            artWords: [
+                {en: 'artist', cn: '艺术家'}, {en: 'paint', cn: '画画(油漆)'}, {en: 'picture', cn: '画'}
+            ],
+            timeWords: [
+                {en: 'hour', cn: '小时'}, {en: 'holiday', cn: '假期'}, {en: 'paid holidays', cn: '带薪假期'}
+            ],
+            feelings: [
+                {en: 'lonely', cn: '孤独的'}, {en: 'stressful', cn: '有压力的'}, {en: 'stress', cn: '压力'}
+            ],
+            others: [
+                {en: 'now', cn: '现在'}, {en: 'name', cn: '名字'}, {en: 'pen', cn: '钢笔'},
+                {en: 'know', cn: '知道'}, {en: 'expensive', cn: '昂贵的'}, {en: 'who', cn: '谁'},
+                {en: 'that', cn: '那个'}, {en: 'Friday', cn: '周五'}, {en: 'why', cn: '为什么'},
+                {en: 'sick', cn: '生病的'}, {en: 'so', cn: '所以'}, {en: 'often', cn: '经常'},
+                {en: 'parents', cn: '父母'}, {en: 'old', cn: '老的'}, {en: 'this morning', cn: '今天早上'},
+                {en: 'after dinner', cn: '晚饭后'}, {en: 'not now', cn: '现在不行'}, {en: 'mom', cn: '妈妈'},
+                {en: 'alone', cn: '独自'}, {en: 'wear', cn: '穿'}, {en: 'clothes', cn: '衣服'},
+                {en: 'fire', cn: '火'}, {en: 'clean', cn: '打扫'}, {en: 'ham', cn: '火腿'},
+                {en: 'only', cn: '只是'}, {en: 'novel', cn: '小说'}, {en: 'partner', cn: '伙伴'},
+                {en: 'earn', cn: '赚'}, {en: 'relax', cn: '放松'}, {en: 'just', cn: '刚刚/只是'},
+                {en: 'again', cn: '再一次'}, {en: 'it depends', cn: '看情况'}, {en: 'imagination', cn: '想象力'},
+                {en: 'international', cn: '国际的'}, {en: 'airport', cn: '机场'}, {en: 'pub', cn: '酒吧'},
+                {en: 'inside', cn: '里面'}, {en: 'outside', cn: '外面'}, {en: 'invite', cn: '邀请'},
+                {en: 'world', cn: '世界'}, {en: 'mountain', cn: '山'}, {en: 'summer', cn: '夏天'},
+                {en: 'winter', cn: '冬天'}, {en: 'light', cn: '光/亮的'}, {en: 'dark', cn: '黑暗'},
+                {en: 'closed', cn: '关闭的'}, {en: 'open', cn: '开放的'}, {en: 'year', cn: '年'},
+                {en: 'prefer', cn: '更喜欢'}, {en: 'barbecue', cn: '烧烤'}, {en: 'forever', cn: '永远'},
+                {en: 'exercise', cn: '锻炼/运动'}, {en: 'degree', cn: '度'}, {en: 'ski', cn: '滑雪'},
+                {en: 'weather', cn: '天气'}, {en: 'sun', cn: '太阳'}, {en: 'midnight', cn: '午夜'}
             ],
             canExamples: [
                 'I can drive a car, but my sister cannot drive.',
@@ -459,6 +534,16 @@
         function initVocab() {
             document.getElementById('vocab-activities').innerHTML = lessonData.activities.map(createVocabCard).join('');
             document.getElementById('vocab-more').innerHTML = lessonData.moreWords.map(createVocabCard).join('');
+            document.getElementById('vocab-jobs').innerHTML = lessonData.jobs.map(createVocabCard).join('');
+            document.getElementById('vocab-modal').innerHTML = lessonData.modalVerbs.map(createVocabCard).join('');
+            document.getElementById('vocab-phrases').innerHTML = lessonData.commonPhrases.map(createVocabCard).join('');
+            document.getElementById('vocab-places').innerHTML = lessonData.places.map(createVocabCard).join('');
+            document.getElementById('vocab-directions').innerHTML = lessonData.directions.map(createVocabCard).join('');
+            document.getElementById('vocab-drinks').innerHTML = lessonData.drinks.map(createVocabCard).join('');
+            document.getElementById('vocab-art').innerHTML = lessonData.artWords.map(createVocabCard).join('');
+            document.getElementById('vocab-time').innerHTML = lessonData.timeWords.map(createVocabCard).join('');
+            document.getElementById('vocab-feelings').innerHTML = lessonData.feelings.map(createVocabCard).join('');
+            document.getElementById('vocab-others').innerHTML = lessonData.others.map(createVocabCard).join('');
         }
         function initReading() {
             document.getElementById('reading-sentences').innerHTML = lessonData.reading.map(function(s) {
@@ -472,8 +557,8 @@
             startDictation();
         }
         function startDictation() {
-            const allVocab = [...lessonData.activities, ...lessonData.moreWords];
-            currentQuestions = shuffle(allVocab).slice(0, 10);
+            const allVocab = [...lessonData.activities, ...lessonData.moreWords, ...lessonData.jobs, ...lessonData.modalVerbs, ...lessonData.commonPhrases, ...lessonData.places, ...lessonData.directions, ...lessonData.drinks, ...lessonData.artWords, ...lessonData.timeWords, ...lessonData.feelings, ...lessonData.others];
+            currentQuestions = shuffle(allVocab).slice(0, 20);
             currentIndex = 0; score = 0;
             showDictationQuestion();
         }
