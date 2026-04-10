@@ -586,4 +586,32 @@
                 feedback.textContent = `❌ 回答错误（第${wrongAttempts}次尝试）`;
                 WrongAnswersManager.save({type: 'translate', cn: q.cn, en: q.en, lesson: 'L1'});
                 if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = `<button class="quiz-btn hint-btn" onclick="showTranslateAnswer()">💡 显示答案</button>`;
-       
+            }
+        }
+        function showTranslateAnswer() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('feedback').innerHTML = `<div class="answer-display">参考答案：${q.en}</div>`;
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showTranslateQuestion(); }, 5000);
+        }
+
+        function showCompletion(containerId, score, total) {
+            const percentage = Math.round(score / total * 100);
+            let stars = '⭐';
+            if (percentage >= 60) stars = '⭐⭐';
+            if (percentage >= 80) stars = '⭐⭐⭐';
+            if (percentage === 100) stars = '🏆⭐⭐⭐🏆';
+            document.getElementById(containerId).innerHTML = 
+                `<div class="completion-message">
+                    <h2>🎉 练习完成！</h2>
+                    <div class="stars">${stars}</div>
+                    <p style="font-size:1.2em;color:#333;">得分：${score} / ${total} (${percentage}%)</p>
+                    <button class="quiz-btn" onclick="location.reload()">再来一次</button>
+                </div>`;
+        }
+
+        initVocab();
+        initReading();
+    </script>
+</body>
+</html>
