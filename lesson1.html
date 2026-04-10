@@ -303,12 +303,26 @@
         <div id="vocab" class="tab-content">
             <h2>人物 (People)</h2>
             <div class="vocab-grid" id="people-vocab"></div>
-            <h2>形容词 (Words)</h2>
+            <h2>形容词 (Adjectives)</h2>
             <div class="vocab-grid" id="words-vocab"></div>
-            <h2>地点 (Place)</h2>
+            <h2>地点 (Places)</h2>
             <div class="vocab-grid" id="place-vocab"></div>
-            <h2>国家/城市</h2>
+            <h2>国家/城市 (Countries)</h2>
             <div class="vocab-grid" id="country-vocab"></div>
+            <h2>物品 (Things)</h2>
+            <div class="vocab-grid" id="things-vocab"></div>
+            <h2>颜色 (Colors)</h2>
+            <div class="vocab-grid" id="colors-vocab"></div>
+            <h2>代词 (Pronouns)</h2>
+            <div class="vocab-grid" id="pronouns-vocab"></div>
+            <h2>be 动词 (Be Verbs)</h2>
+            <div class="vocab-grid" id="beverbs-vocab"></div>
+            <h2>职业 (Jobs)</h2>
+            <div class="vocab-grid" id="jobs-vocab"></div>
+            <h2>食物 (Food)</h2>
+            <div class="vocab-grid" id="food-vocab"></div>
+            <h2>其他 (Others)</h2>
+            <div class="vocab-grid" id="others-vocab"></div>
         </div>
         
         <div id="reading" class="tab-content">
@@ -371,10 +385,17 @@
         };
 
         const lessonData = {
-            people: [{en:'teacher',cn:'老师'},{en:'student',cn:'学生'},{en:'friend',cn:'朋友'},{en:'boss',cn:'老板'},{en:'colleague',cn:'同事'},{en:'roommate',cn:'室友'}],
-            words: [{en:'busy',cn:'忙碌的'},{en:'late',cn:'迟到的'},{en:'early',cn:'早的'},{en:'tired',cn:'累的'},{en:'bad',cn:'坏的'},{en:'good',cn:'好的'},{en:'OK',cn:'好的'},{en:'cold',cn:'冷的'},{en:'hot',cn:'热的'}],
-            places: [{en:'room',cn:'房间'},{en:'company',cn:'公司'},{en:'office',cn:'办公室'},{en:'school',cn:'学校'},{en:'classroom',cn:'教室'},{en:'here',cn:'这里'},{en:'there',cn:'那里'}],
-            countries: [{en:'China',cn:'中国'},{en:'Philippines',cn:'菲律宾'},{en:'Korea',cn:'韩国'},{en:'Japan',cn:'日本'},{en:'Malaysia',cn:'马来西亚'},{en:'Spain',cn:'西班牙'},{en:'Italy',cn:'意大利'},{en:'America',cn:'美国'},{en:'Makati',cn:'马卡蒂'},{en:'Manila',cn:'马尼拉'}],
+            people: [{en:'teacher',cn:'老师'},{en:'student',cn:'学生'},{en:'friend',cn:'朋友'},{en:'boss',cn:'老板'},{en:'colleague',cn:'同事'},{en:'roommate',cn:'室友'},{en:'boy',cn:'男孩'},{en:'girl',cn:'女孩'},{en:'man',cn:'男人'},{en:'woman',cn:'女人'},{en:'men',cn:'男人们'},{en:'women',cn:'女人们'},{en:'child',cn:'孩子'},{en:'children',cn:'孩子们'},{en:'husband',cn:'丈夫'},{en:'wife',cn:'妻子'},{en:'mother',cn:'母亲'},{en:'father',cn:'父亲'},{en:'son',cn:'儿子'},{en:'daughter',cn:'女儿'},{en:'sister',cn:'姐妹'},{en:'brother',cn:'兄弟'},{en:'boyfriend',cn:'男朋友'},{en:'girlfriend',cn:'女朋友'},{en:'person',cn:'人'},{en:'people',cn:'人们'}],
+            words: [{en:'busy',cn:'忙碌的'},{en:'late',cn:'迟到的'},{en:'early',cn:'早的'},{en:'tired',cn:'累的'},{en:'bad',cn:'坏的'},{en:'good',cn:'好的'},{en:'OK',cn:'好的'},{en:'okay',cn:'好的'},{en:'cold',cn:'冷的'},{en:'hot',cn:'热的'},{en:'happy',cn:'开心的'},{en:'sleepy',cn:'困倦的'},{en:'very',cn:'非常'},{en:'every',cn:'每一'},{en:'big',cn:'大的'},{en:'small',cn:'小的'},{en:'old',cn:'旧的/老的'},{en:'new',cn:'新的'},{en:'young',cn:'年轻的'},{en:'fast',cn:'快的'},{en:'slow',cn:'慢的'},{en:'long',cn:'长的'},{en:'short',cn:'短的/矮的'},{en:'tall',cn:'高的'},{en:'far',cn:'远的'},{en:'near',cn:'近的'},{en:'married',cn:'已婚的'},{en:'single',cn:'单身的'},{en:'quiet',cn:'安静的'},{en:'loud',cn:'吵闹的'},{en:'easy',cn:'容易的'},{en:'difficult',cn:'困难的'},{en:'different',cn:'不同的'},{en:'same',cn:'相同的'},{en:'favorite',cn:'最喜欢的'},{en:'beautiful',cn:'美丽的'},{en:'pretty',cn:'漂亮的'},{en:'right',cn:'正确的'},{en:'sad',cn:'难过的'},{en:'good-looking',cn:'好看的'},{en:'interesting',cn:'有趣的'}],
+            places: [{en:'room',cn:'房间'},{en:'company',cn:'公司'},{en:'office',cn:'办公室'},{en:'school',cn:'学校'},{en:'classroom',cn:'教室'},{en:'here',cn:'这里'},{en:'there',cn:'那里'},{en:'centre',cn:'中心'},{en:'center',cn:'中心'},{en:'home',cn:'家'},{en:'street',cn:'街道'},{en:'hotel',cn:'酒店'}],
+            countries: [{en:'China',cn:'中国'},{en:'Philippines',cn:'菲律宾'},{en:'Korea',cn:'韩国'},{en:'Japan',cn:'日本'},{en:'Malaysia',cn:'马来西亚'},{en:'Spain',cn:'西班牙'},{en:'Italy',cn:'意大利'},{en:'America',cn:'美国'},{en:'Makati',cn:'马卡蒂'},{en:'Manila',cn:'马尼拉'},{en:'London',cn:'伦敦'},{en:'Brazil',cn:'巴西'},{en:'Vietnam',cn:'越南'},{en:'Scotland',cn:'苏格兰'},{en:'Ireland',cn:'爱尔兰'}],
+            things: [{en:'phone',cn:'手机'},{en:'table',cn:'桌子'},{en:'chair',cn:'椅子'},{en:'bag',cn:'包'},{en:'window',cn:'窗户'},{en:'door',cn:'门'},{en:'board',cn:'板/白板'},{en:'laptop',cn:'笔记本电脑'},{en:'book',cn:'书'},{en:'umbrella',cn:'雨伞'},{en:'card',cn:'卡片'},{en:'bed',cn:'床'},{en:'this',cn:'这个'},{en:'that',cn:'那个'},{en:'glasses',cn:'眼镜'},{en:'wallet',cn:'钱包'},{en:'cat',cn:'猫'},{en:'CD',cn:'光盘'},{en:'DVD',cn:'影碟'}],
+            colors: [{en:'red',cn:'红色'},{en:'green',cn:'绿色'},{en:'yellow',cn:'黄色'},{en:'blue',cn:'蓝色'},{en:'orange',cn:'橙色'},{en:'brown',cn:'棕色'},{en:'black',cn:'黑色'},{en:'white',cn:'白色'},{en:'pink',cn:'粉色'},{en:'grey',cn:'灰色'},{en:'gray',cn:'灰色'}],
+            pronouns: [{en:'I',cn:'我'},{en:'you',cn:'你/你们'},{en:'he',cn:'他'},{en:'she',cn:'她'},{en:'it',cn:'它'},{en:'we',cn:'我们'},{en:'they',cn:'他们'},{en:'my',cn:'我的'},{en:'your',cn:'你的/你们的'},{en:'his',cn:'他的'},{en:'her',cn:'她的'},{en:'its',cn:'它的'},{en:'our',cn:'我们的'},{en:'their',cn:'他们的'}],
+            beVerbs: [{en:'am',cn:'是'},{en:'is',cn:'是'},{en:'are',cn:'是'},{en:'not',cn:'不'}],
+            jobs: [{en:'engineer',cn:'工程师'},{en:'nurse',cn:'护士'},{en:'singer',cn:'歌手'},{en:'shop assistant',cn:'店员'},{en:'band',cn:'乐队'}],
+            food: [{en:'chicken',cn:'鸡肉'},{en:'beef',cn:'牛肉'},{en:'pork',cn:'猪肉'},{en:'toast',cn:'吐司'},{en:'cafe',cn:'咖啡馆'}],
+            others: [{en:'and',cn:'和'},{en:'but',cn:'但是'},{en:'yes',cn:'是'},{en:'no',cn:'不'},{en:'today',cn:'今天'},{en:'day',cn:'天'},{en:'together',cn:'一起'},{en:'think',cn:'想/认为'},{en:'now',cn:'现在'},{en:'at home',cn:'在家'},{en:'every day',cn:'每天'},{en:'best',cn:'最好的'},{en:'one',cn:'一'},{en:'just',cn:'只是/刚刚'},{en:'in a hurry',cn:'匆忙'},{en:'number',cn:'号码'},{en:'address',cn:'地址'},{en:'email',cn:'电子邮件'},{en:'surname',cn:'姓氏'},{en:'who',cn:'谁'},{en:'what color',cn:'什么颜色'}],
             basicReading: ['I am busy, you are not busy.','I am tired, you are not tired.','Are you cold? No, I am not cold. I am hot.','Teacher, am I good? Yes, you are.','Is he busy? Yes, he is. He is tired.','Am I late? No, you are not. You are early.','Are they good? No, they are bad.','Are you my friend? Yes, I am.','Are we tired? No, we are not tired.'],
             extendedReading: ['We are very busy, but my boss is not busy.','English teacher is not tired, but I am very tired.','Are you okay? I am tired and sleepy today.','You are my good friend. But he is not my friend.','They are not here. They are there. They are so busy!','My colleague is not very nice. She is late every day.','My roommate is my friend. We are very happy together.','Are you cold? No, I am very hot. My room is very hot, too.'],
             fillBlankQuestions: [
@@ -414,6 +435,13 @@
             document.getElementById('words-vocab').innerHTML = lessonData.words.map(createVocabCard).join('');
             document.getElementById('place-vocab').innerHTML = lessonData.places.map(createVocabCard).join('');
             document.getElementById('country-vocab').innerHTML = lessonData.countries.map(createVocabCard).join('');
+            const thingsEl = document.getElementById('things-vocab'); if(thingsEl) thingsEl.innerHTML = lessonData.things.map(createVocabCard).join('');
+            const colorsEl = document.getElementById('colors-vocab'); if(colorsEl) colorsEl.innerHTML = lessonData.colors.map(createVocabCard).join('');
+            const pronounsEl = document.getElementById('pronouns-vocab'); if(pronounsEl) pronounsEl.innerHTML = lessonData.pronouns.map(createVocabCard).join('');
+            const beVerbsEl = document.getElementById('beverbs-vocab'); if(beVerbsEl) beVerbsEl.innerHTML = lessonData.beVerbs.map(createVocabCard).join('');
+            const jobsEl = document.getElementById('jobs-vocab'); if(jobsEl) jobsEl.innerHTML = lessonData.jobs.map(createVocabCard).join('');
+            const foodEl = document.getElementById('food-vocab'); if(foodEl) foodEl.innerHTML = lessonData.food.map(createVocabCard).join('');
+            const othersEl = document.getElementById('others-vocab'); if(othersEl) othersEl.innerHTML = lessonData.others.map(createVocabCard).join('');
         }
         function initReading() {
             document.getElementById('basic-reading').innerHTML = lessonData.basicReading.map(s => `<div class="reading-item">${s}<button class="speaker-btn" onclick="speak('${s.replace(/'/g,"\'")}')">🔊</button></div>`).join('');
@@ -427,8 +455,8 @@
             startDictation();
         }
         function startDictation() {
-            const allVocab = [...lessonData.people, ...lessonData.words, ...lessonData.places, ...lessonData.countries];
-            currentQuestions = shuffle(allVocab).slice(0, 10);
+            const allVocab = [...lessonData.people, ...lessonData.words, ...lessonData.places, ...lessonData.countries, ...lessonData.things, ...lessonData.colors, ...lessonData.pronouns, ...lessonData.beVerbs, ...lessonData.jobs, ...lessonData.food, ...lessonData.others];
+            currentQuestions = shuffle(allVocab).slice(0, 20);
             currentIndex = 0; score = 0;
             showDictationQuestion();
         }
@@ -558,32 +586,4 @@
                 feedback.textContent = `❌ 回答错误（第${wrongAttempts}次尝试）`;
                 WrongAnswersManager.save({type: 'translate', cn: q.cn, en: q.en, lesson: 'L1'});
                 if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = `<button class="quiz-btn hint-btn" onclick="showTranslateAnswer()">💡 显示答案</button>`;
-            }
-        }
-        function showTranslateAnswer() {
-            const q = currentQuestions[currentIndex];
-            document.getElementById('feedback').innerHTML = `<div class="answer-display">参考答案：${q.en}</div>`;
-            document.getElementById('feedback').className = 'quiz-feedback show';
-            setTimeout(() => { currentIndex++; showTranslateQuestion(); }, 5000);
-        }
-
-        function showCompletion(containerId, score, total) {
-            const percentage = Math.round(score / total * 100);
-            let stars = '⭐';
-            if (percentage >= 60) stars = '⭐⭐';
-            if (percentage >= 80) stars = '⭐⭐⭐';
-            if (percentage === 100) stars = '🏆⭐⭐⭐🏆';
-            document.getElementById(containerId).innerHTML = 
-                `<div class="completion-message">
-                    <h2>🎉 练习完成！</h2>
-                    <div class="stars">${stars}</div>
-                    <p style="font-size:1.2em;color:#333;">得分：${score} / ${total} (${percentage}%)</p>
-                    <button class="quiz-btn" onclick="location.reload()">再来一次</button>
-                </div>`;
-        }
-
-        initVocab();
-        initReading();
-    </script>
-</body>
-</html>
+       
