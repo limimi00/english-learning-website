@@ -278,10 +278,30 @@
             </table>
         </div>
         <div id="vocab" class="tab-content">
-            <h2>动词短语</h2>
+            <h2>动词短语 (Verb Phrases)</h2>
             <div class="vocab-grid" id="vocab-verbs"></div>
-            <h2>新单词</h2>
+            <h2>新单词 (New Words)</h2>
             <div class="vocab-grid" id="vocab-new"></div>
+            <h2>食物 (Food)</h2>
+            <div class="vocab-grid" id="vocab-food"></div>
+            <h2>星期 (Days)</h2>
+            <div class="vocab-grid" id="vocab-days"></div>
+            <h2>地点 (Places)</h2>
+            <div class="vocab-grid" id="vocab-places"></div>
+            <h2>国家/城市 (Countries)</h2>
+            <div class="vocab-grid" id="vocab-countries"></div>
+            <h2>职业 (Jobs)</h2>
+            <div class="vocab-grid" id="vocab-jobs"></div>
+            <h2>助动词 (Auxiliary Verbs)</h2>
+            <div class="vocab-grid" id="vocab-aux"></div>
+            <h2>疑问词 (Question Words)</h2>
+            <div class="vocab-grid" id="vocab-question"></div>
+            <h2>时间 (Time)</h2>
+            <div class="vocab-grid" id="vocab-time"></div>
+            <h2>频率副词 (Frequency)</h2>
+            <div class="vocab-grid" id="vocab-frequency"></div>
+            <h2>其他 (Others)</h2>
+            <div class="vocab-grid" id="vocab-others"></div>
         </div>
         <div id="reading" class="tab-content">
             <h2>阅读句子</h2>
@@ -327,18 +347,63 @@
         const lessonData = {
             verbPhrases: [
                 {en: 'live in apartment', cn: '住在公寓'}, {en: 'have children', cn: '有孩子'},
-                {en: 'watch TV', cn: '看电视'}, {en: 'listen to music', cn: '听音乐'},
+                {en: 'watch TV', cn: '看电视'}, {en: 'watch movies', cn: '看电影'},
+                {en: 'listen to music', cn: '听音乐'},
                 {en: 'eat fast food', cn: '吃快餐'}, {en: 'drink coffee', cn: '喝咖啡'},
                 {en: 'speak English', cn: '说英语'}, {en: 'want a new car', cn: '想要新车'},
                 {en: 'like dogs', cn: '喜欢狗'}, {en: 'work in a bank', cn: '在银行工作'},
-                {en: 'study Spanish', cn: '学西班牙语'}, {en: 'read books', cn: '看书'}
+                {en: 'study Spanish', cn: '学西班牙语'}, {en: 'read books', cn: '看书'}, {en: 'read news', cn: '看新闻'},
+                {en: 'go to France', cn: '去法国'}, {en: 'meet', cn: '遇见'},
+                {en: 'get up', cn: '起床'}, {en: 'wake up', cn: '醒来'},
+                {en: 'have a shower', cn: '洗澡'}, {en: 'go to work', cn: '去上班'},
+                {en: 'start work', cn: '开始工作'}, {en: 'finish work', cn: '下班'},
+                {en: 'leave home', cn: '离开家'}, {en: 'go shopping', cn: '去购物'},
+                {en: 'go to the gym', cn: '去健身房'}, {en: 'cook dinner', cn: '做晚饭'},
+                {en: 'make dinner', cn: '做晚饭'}, {en: 'do housework', cn: '做家务'},
+                {en: 'go to bed', cn: '上床睡觉'}, {en: 'sleep', cn: '睡觉'}
             ],
             newWords: [
                 {en: 'first time', cn: '第一次'}, {en: 'hair', cn: '头发'}, {en: 'haircut', cn: '理发'},
                 {en: 'traffic', cn: '交通'}, {en: 'problem', cn: '问题'}, {en: 'fantastic', cn: '极好的'},
                 {en: 'beer', cn: '啤酒'}, {en: 'history', cn: '历史'}, {en: 'house', cn: '房子'},
-                {en: 'magazine', cn: '杂志'}, {en: 'university', cn: '大学'}, {en: 'manager', cn: '经理'}
+                {en: 'magazine', cn: '杂志'}, {en: 'university', cn: '大学'}, {en: 'manager', cn: '经理'},
+                {en: 'sister', cn: '姐妹'}, {en: 'tomorrow', cn: '明天'}, {en: 'Germany', cn: '德国'},
+                {en: 'businessman', cn: '商人'}, {en: 'great', cn: '棒的'}, {en: 'accountant', cn: '会计'},
+                {en: 'rich', cn: '富有的'}, {en: 'actor', cn: '演员'}
             ],
+            food: [
+                {en: 'fish', cn: '鱼'}, {en: 'pasta', cn: '意大面'}, {en: 'potatoes', cn: '土豆'},
+                {en: 'cereal', cn: '谷物'}, {en: 'juice', cn: '果汁'}, {en: 'meat', cn: '肉'},
+                {en: 'rice', cn: '米饭'}, {en: 'fruit', cn: '水果'}, {en: 'sugar', cn: '糖'},
+                {en: 'wine', cn: '葡萄酒'}, {en: 'breakfast', cn: '早餐'}, {en: 'lunch', cn: '午餐'},
+                {en: 'dinner', cn: '晚餐'}, {en: 'beef', cn: '牛肉'}, {en: 'eggs', cn: '鸡蛋'},
+                {en: 'bread', cn: '面包'}, {en: 'salt', cn: '盐'}, {en: 'water', cn: '水'},
+                {en: 'pork', cn: '猪肉'}, {en: 'salad', cn: '沙拉'}, {en: 'cheese', cn: '奶酪'},
+                {en: 'chocolate', cn: '巧克力'}, {en: 'burger', cn: '汉堡'}, {en: 'chicken', cn: '鸡肉'},
+                {en: 'vegetables', cn: '蔬菜'}, {en: 'sandwich', cn: '三明治'}, {en: 'milk', cn: '牛奶'},
+                {en: 'fries', cn: '炸薯条'}, {en: 'tea', cn: '茶'}, {en: 'green tea', cn: '绿茶'}
+            ],
+            days: [
+                {en: 'Monday', cn: '周一'}, {en: 'Tuesday', cn: '周二'}, {en: 'Wednesday', cn: '周三'},
+                {en: 'Thursday', cn: '周四'}, {en: 'Friday', cn: '周五'}, {en: 'Saturday', cn: '周六'},
+                {en: 'Sunday', cn: '周日'}, {en: 'weekend', cn: '周末'}
+            ],
+            places: [
+                {en: 'apartment', cn: '公寓'}, {en: 'town', cn: '城镇'}, {en: 'village', cn: '村庄'},
+                {en: 'country', cn: '乡下'}, {en: 'shopping center', cn: '购物中心'}
+            ],
+            countries: [
+                {en: 'France', cn: '法国'}, {en: 'England', cn: '英格兰'}, {en: 'UK', cn: '英国'},
+                {en: 'Canada', cn: '加拿大'}, {en: 'London', cn: '伦敦'}, {en: 'Madrid', cn: '马德里'}
+            ],
+            jobs: [
+                {en: 'doctor', cn: '医生'}, {en: 'programmer', cn: '程序员'}, {en: 'tourist', cn: '游客'}
+            ],
+            auxVerbs: [{en:'do',cn:'助动词/做'},{en:'does',cn:'助动词(第三人称)'},{en:'have',cn:'有'},{en:'has',cn:'有(第三人称)'}],
+            questionWords: [{en:'why',cn:'为什么'},{en:'where',cn:'哪里'},{en:'what',cn:'什么'},{en:'when',cn:'什么时候'},{en:'or',cn:'或者'},{en:'how',cn:'怎么'}],
+            timeWords: [{en:'am',cn:'上午'},{en:'pm',cn:'下午'},{en:'what time',cn:'几点'},{en:'o\'clock',cn:'点'}],
+            frequency: [{en:'always',cn:'总是'},{en:'usually',cn:'通常'},{en:'often',cn:'经常'},{en:'sometimes',cn:'有时候'},{en:'never',cn:'从不'}],
+            others: [{en:'because',cn:'因为'},{en:'only',cn:'只,仅仅'},{en:'cheap',cn:'便宜的'},{en:'near',cn:'附近'},{en:'color',cn:'颜色'},{en:'Spanish',cn:'西班牙语'},{en:'Italian',cn:'意大利语'},{en:'pop',cn:'流行音乐'},{en:'rock',cn:'摇滚音乐'},{en:'music',cn:'音乐'},{en:'a',cn:'一'},{en:'an',cn:'一'},{en:'the',cn:'这/那'},{en:'Chinese',cn:'中文'},{en:'think',cn:'认为'},{en:'know',cn:'知道'},{en:'hungry',cn:'饿的'},{en:'sick',cn:'生病的'},{en:'part-time',cn:'兼职的'}],
             reading: [
                 'Do you live in an apartment or a house? I live in a house.',
                 'Do you want a new boyfriend? No, I do not.',
@@ -393,6 +458,16 @@
         function initVocab() {
             document.getElementById('vocab-verbs').innerHTML = lessonData.verbPhrases.map(createVocabCard).join('');
             document.getElementById('vocab-new').innerHTML = lessonData.newWords.map(createVocabCard).join('');
+            document.getElementById('vocab-food').innerHTML = lessonData.food.map(createVocabCard).join('');
+            document.getElementById('vocab-days').innerHTML = lessonData.days.map(createVocabCard).join('');
+            document.getElementById('vocab-places').innerHTML = lessonData.places.map(createVocabCard).join('');
+            document.getElementById('vocab-countries').innerHTML = lessonData.countries.map(createVocabCard).join('');
+            document.getElementById('vocab-jobs').innerHTML = lessonData.jobs.map(createVocabCard).join('');
+            document.getElementById('vocab-aux').innerHTML = lessonData.auxVerbs.map(createVocabCard).join('');
+            document.getElementById('vocab-question').innerHTML = lessonData.questionWords.map(createVocabCard).join('');
+            document.getElementById('vocab-time').innerHTML = lessonData.timeWords.map(createVocabCard).join('');
+            document.getElementById('vocab-frequency').innerHTML = lessonData.frequency.map(createVocabCard).join('');
+            document.getElementById('vocab-others').innerHTML = lessonData.others.map(createVocabCard).join('');
         }
         function initReading() {
             document.getElementById('reading-sentences').innerHTML = lessonData.reading.map(function(s) {
@@ -406,8 +481,8 @@
             startDictation();
         }
         function startDictation() {
-            const allVocab = [...lessonData.verbPhrases, ...lessonData.newWords];
-            currentQuestions = shuffle(allVocab).slice(0, 10);
+            const allVocab = [...lessonData.verbPhrases, ...lessonData.newWords, ...lessonData.food, ...lessonData.days, ...lessonData.places, ...lessonData.countries, ...lessonData.jobs, ...lessonData.auxVerbs, ...lessonData.questionWords, ...lessonData.timeWords, ...lessonData.frequency, ...lessonData.others];
+            currentQuestions = shuffle(allVocab).slice(0, 20);
             currentIndex = 0; score = 0;
             showDictationQuestion();
         }
