@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 2 - do / does / have / has</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #f5f7fa; 
+            min-height: 100vh; 
+            padding: 10px; 
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 16px; 
+            padding: 20px 15px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1); 
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 2px solid #eee; 
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        h1 { 
+            color: #333; 
+            font-size: clamp(1.2rem, 4.5vw, 1.8rem); 
+        }
+        .back-btn { 
+            background: #667eea; 
+            color: white; 
+            padding: 12px 24px; 
+            border-radius: 10px; 
+            text-decoration: none; 
+            font-size: 1rem;
+            display: inline-block;
+        }
+        .tabs { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+            overflow-x: auto; 
+            padding-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tabs::-webkit-scrollbar { height: 4px; }
+        .tabs::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+        .tab { 
+            padding: 12px 20px; 
+            background: #f0f0f0; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 1rem; 
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .tab.active { background: #667eea; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .grammar-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 15px 0; 
+            font-size: clamp(0.85rem, 3vw, 1rem);
+        }
+        .grammar-table th, .grammar-table td { 
+            border: 1px solid #ddd; 
+            padding: 12px 10px; 
+            text-align: left; 
+        }
+        .grammar-table th { background: #667eea; color: white; }
+        .vocab-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px; 
+            margin: 15px 0; 
+        }
+        @media (min-width: 600px) { 
+            .vocab-grid { grid-template-columns: repeat(3, 1fr); } 
+        }
+        @media (min-width: 900px) { 
+            .vocab-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } 
+        }
+        .vocab-card { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 15px 12px; 
+            border-radius: 12px; 
+            text-align: center; 
+            position: relative; 
+            font-size: clamp(0.85rem, 3vw, 1rem);
+        }
+        .vocab-card .en { 
+            font-size: clamp(1rem, 3.5vw, 1.2em); 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+        }
+        .vocab-card .speaker-btn { 
+            position: absolute; 
+            top: 8px; 
+            right: 8px; 
+            background: rgba(255,255,255,0.3); 
+            border: none; 
+            color: white; 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .vocab-card .speaker-btn:active { background: rgba(255,255,255,0.5); }
+        .reading-item { 
+            background: #f8f9fa; 
+            padding: 15px 50px 15px 15px; 
+            border-radius: 12px; 
+            margin: 12px 0; 
+            border-left: 4px solid #667eea; 
+            position: relative; 
+            font-size: clamp(0.9rem, 3.2vw, 1.05rem);
+            line-height: 1.5;
+        }
+        .reading-item .speaker-btn { 
+            position: absolute; 
+            right: 10px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            background: #667eea; 
+            border: none; 
+            color: white; 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .reading-item .speaker-btn:active { background: #5a6fd6; }
+        .quiz-container { 
+            background: #f8f9fa; 
+            padding: 25px 15px; 
+            border-radius: 16px; 
+            text-align: center; 
+            min-height: 280px; 
+        }
+        .quiz-progress { 
+            margin-bottom: 15px; 
+            color: #667eea; 
+            font-size: clamp(1rem, 3.5vw, 1.15em); 
+        }
+        .quiz-question { 
+            font-size: clamp(1.1rem, 4vw, 1.5em); 
+            margin: 20px 0; 
+            color: #333; 
+            line-height: 1.5;
+        }
+        .quiz-input { 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 15px; 
+            border: 2px solid #ddd; 
+            border-radius: 12px; 
+            font-size: 1.1rem; 
+            text-align: center; 
+            margin: 15px 0; 
+        }
+        .quiz-input.correct { border-color: #28a745; background: #d4edda; }
+        .quiz-input.wrong { border-color: #dc3545; background: #f8d7da; }
+        .quiz-btn { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 14px 35px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 1.05rem; 
+            margin: 10px; 
+            min-width: 120px;
+        }
+        .quiz-btn:active { background: #5a6fd6; }
+        .quiz-btn.hint-btn { background: #ffc107; color: #333; }
+        .quiz-btn.hint-btn:active { background: #e5ac00; }
+        .quiz-feedback { 
+            margin-top: 15px; 
+            padding: 15px; 
+            border-radius: 12px; 
+            font-size: 1.05em; 
+            display: none; 
+        }
+        .quiz-feedback.show { display: block; }
+        .quiz-feedback.correct { background: #d4edda; color: #155724; }
+        .quiz-feedback.wrong { background: #f8d7da; color: #721c24; }
+        .mode-toggle { margin-bottom: 20px; }
+        .mode-toggle button { 
+            padding: 12px 24px; 
+            margin: 0 5px; 
+            border: 2px solid #667eea; 
+            background: white; 
+            color: #667eea; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 1rem;
+        }
+        .mode-toggle button.active { background: #667eea; color: white; }
+        .completion-message { text-align: center; padding: 30px 15px; }
+        .completion-message h2 { color: #28a745; margin-bottom: 15px; font-size: clamp(1.3rem, 5vw, 1.8rem); }
+        .stars { font-size: clamp(2rem, 8vw, 3em); margin: 15px 0; }
+        .answer-display { 
+            font-size: clamp(1.1rem, 4vw, 1.3em); 
+            color: #667eea; 
+            font-weight: bold; 
+            margin: 15px 0; 
+            padding: 15px; 
+            background: #e7e9ff; 
+            border-radius: 10px; 
+        }
+        .hint-text { color: #888; font-size: 0.95em; margin: 10px 0; display: none; }
+        .hint-text.show { display: block; }
+        h2 { 
+            color: #667eea; 
+            margin: 25px 0 12px 0; 
+            padding-bottom: 8px; 
+            border-bottom: 2px solid #eee; 
+            font-size: clamp(1.1rem, 4vw, 1.4rem);
+        }
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { padding: 40px; border-radius: 20px; }
+            .header { margin-bottom: 30px; padding-bottom: 20px; }
+            .tabs { margin-bottom: 30px; flex-wrap: wrap; }
+            .quiz-container { padding: 40px; }
+            .quiz-question { margin: 30px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Lesson 2</h1>
+            <a href="index.html" class="back-btn">← 返回</a>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('grammar')">📖 语法</button>
+            <button class="tab" onclick="showTab('vocab')">📝 词汇</button>
+            <button class="tab" onclick="showTab('reading')">📄 阅读</button>
+            <button class="tab" onclick="showTab('dictation')">✍️ 默写</button>
+            <button class="tab" onclick="showTab('fillblank')">🔤 填空</button>
+            <button class="tab" onclick="showTab('translate')">🌐 翻译</button>
+        </div>
+        <div id="grammar" class="tab-content active">
+            <h2>1. 动词短语</h2>
+            <div class="vocab-grid" id="verb-phrases"></div>
+            <h2>2. Do / Does 疑问句</h2>
+            <table class="grammar-table">
+                <tr><th>主语</th><th>助动词</th><th>例句</th></tr>
+                <tr><td>I / You / We / They</td><td>Do</td><td>Do you live in an apartment?</td></tr>
+                <tr><td>He / She / It</td><td>Does</td><td>Does she work in a bank?</td></tr>
+            </table>
+            <h2>3. Have / Has 用法</h2>
+            <table class="grammar-table">
+                <tr><th>主语</th><th>动词</th><th>例句</th></tr>
+                <tr><td>I / You / We / They</td><td>have</td><td>I have two brothers.</td></tr>
+                <tr><td>He / She / It</td><td>has</td><td>She has a Japanese car.</td></tr>
+            </table>
+        </div>
+        <div id="vocab" class="tab-content">
+            <h2>动词短语 (Verb Phrases)</h2>
+            <div class="vocab-grid" id="vocab-verbs"></div>
+            <h2>新单词 (New Words)</h2>
+            <div class="vocab-grid" id="vocab-new"></div>
+            <h2>食物 (Food)</h2>
+            <div class="vocab-grid" id="vocab-food"></div>
+            <h2>星期 (Days)</h2>
+            <div class="vocab-grid" id="vocab-days"></div>
+            <h2>地点 (Places)</h2>
+            <div class="vocab-grid" id="vocab-places"></div>
+            <h2>国家/城市 (Countries)</h2>
+            <div class="vocab-grid" id="vocab-countries"></div>
+            <h2>职业 (Jobs)</h2>
+            <div class="vocab-grid" id="vocab-jobs"></div>
+            <h2>助动词 (Auxiliary Verbs)</h2>
+            <div class="vocab-grid" id="vocab-aux"></div>
+            <h2>疑问词 (Question Words)</h2>
+            <div class="vocab-grid" id="vocab-question"></div>
+            <h2>时间 (Time)</h2>
+            <div class="vocab-grid" id="vocab-time"></div>
+            <h2>频率副词 (Frequency)</h2>
+            <div class="vocab-grid" id="vocab-frequency"></div>
+            <h2>其他 (Others)</h2>
+            <div class="vocab-grid" id="vocab-others"></div>
+        </div>
+        <div id="reading" class="tab-content">
+            <h2>阅读句子</h2>
+            <div id="reading-sentences"></div>
+        </div>
+        <div id="dictation" class="tab-content">
+            <div class="mode-toggle">
+                <button class="active" onclick="setDictationMode('cn2en')">中译英</button>
+                <button onclick="setDictationMode('en2cn')">英译中</button>
+            </div>
+            <div class="quiz-container" id="dictation-quiz">
+                <div class="completion-message"><h2>🎯 单词默写</h2><p style="color:#666;margin:20px 0;">选择上方模式开始练习</p></div>
+            </div>
+        </div>
+        <div id="fillblank" class="tab-content">
+            <div class="quiz-container" id="fillblank-quiz">
+                <div class="completion-message"><h2>📝 填空练习</h2><button class="quiz-btn" onclick="startFillBlank()">开始练习</button></div>
+            </div>
+        </div>
+        <div id="translate" class="tab-content">
+            <div class="quiz-container" id="translate-quiz">
+                <div class="completion-message"><h2>🌐 翻译练习</h2><button class="quiz-btn" onclick="startTranslate()">开始练习</button></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const WrongAnswersManager = {
+            STORAGE_KEY: 'english_learning_wrong_answers_l2',
+            getAll() { const data = localStorage.getItem(this.STORAGE_KEY); return data ? JSON.parse(data) : {}; },
+            save(wrongItem) {
+                const key = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
+                const all = this.getAll();
+                if (!all[key]) { all[key] = { ...wrongItem, correctCount: 0, lastWrong: Date.now() }; }
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(all));
+            },
+            recordCorrect(wrongItem) {
+                const key = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
+                const all = this.getAll();
+                if (all[key]) { all[key].correctCount++; if (all[key].correctCount >= 5) { delete all[key]; } localStorage.setItem(this.STORAGE_KEY, JSON.stringify(all)); }
+            }
+        };
+
+        const lessonData = {
+            verbPhrases: [
+                {en: 'live in apartment', cn: '住在公寓'}, {en: 'have children', cn: '有孩子'},
+                {en: 'watch TV', cn: '看电视'}, {en: 'watch movies', cn: '看电影'},
+                {en: 'listen to music', cn: '听音乐'},
+                {en: 'eat fast food', cn: '吃快餐'}, {en: 'drink coffee', cn: '喝咖啡'},
+                {en: 'speak English', cn: '说英语'}, {en: 'want a new car', cn: '想要新车'},
+                {en: 'like dogs', cn: '喜欢狗'}, {en: 'work in a bank', cn: '在银行工作'},
+                {en: 'study Spanish', cn: '学西班牙语'}, {en: 'read books', cn: '看书'}, {en: 'read news', cn: '看新闻'},
+                {en: 'go to France', cn: '去法国'}, {en: 'meet', cn: '遇见'},
+                {en: 'get up', cn: '起床'}, {en: 'wake up', cn: '醒来'},
+                {en: 'have a shower', cn: '洗澡'}, {en: 'go to work', cn: '去上班'},
+                {en: 'start work', cn: '开始工作'}, {en: 'finish work', cn: '下班'},
+                {en: 'leave home', cn: '离开家'}, {en: 'go shopping', cn: '去购物'},
+                {en: 'go to the gym', cn: '去健身房'}, {en: 'cook dinner', cn: '做晚饭'},
+                {en: 'make dinner', cn: '做晚饭'}, {en: 'do housework', cn: '做家务'},
+                {en: 'go to bed', cn: '上床睡觉'}, {en: 'sleep', cn: '睡觉'}
+            ],
+            newWords: [
+                {en: 'first time', cn: '第一次'}, {en: 'hair', cn: '头发'}, {en: 'haircut', cn: '理发'},
+                {en: 'traffic', cn: '交通'}, {en: 'problem', cn: '问题'}, {en: 'fantastic', cn: '极好的'},
+                {en: 'beer', cn: '啤酒'}, {en: 'history', cn: '历史'}, {en: 'house', cn: '房子'},
+                {en: 'magazine', cn: '杂志'}, {en: 'university', cn: '大学'}, {en: 'manager', cn: '经理'},
+                {en: 'sister', cn: '姐妹'}, {en: 'tomorrow', cn: '明天'}, {en: 'Germany', cn: '德国'},
+                {en: 'businessman', cn: '商人'}, {en: 'great', cn: '棒的'}, {en: 'accountant', cn: '会计'},
+                {en: 'rich', cn: '富有的'}, {en: 'actor', cn: '演员'}
+            ],
+            food: [
+                {en: 'fish', cn: '鱼'}, {en: 'pasta', cn: '意大面'}, {en: 'potatoes', cn: '土豆'},
+                {en: 'cereal', cn: '谷物'}, {en: 'juice', cn: '果汁'}, {en: 'meat', cn: '肉'},
+                {en: 'rice', cn: '米饭'}, {en: 'fruit', cn: '水果'}, {en: 'sugar', cn: '糖'},
+                {en: 'wine', cn: '葡萄酒'}, {en: 'breakfast', cn: '早餐'}, {en: 'lunch', cn: '午餐'},
+                {en: 'dinner', cn: '晚餐'}, {en: 'beef', cn: '牛肉'}, {en: 'eggs', cn: '鸡蛋'},
+                {en: 'bread', cn: '面包'}, {en: 'salt', cn: '盐'}, {en: 'water', cn: '水'},
+                {en: 'pork', cn: '猪肉'}, {en: 'salad', cn: '沙拉'}, {en: 'cheese', cn: '奶酪'},
+                {en: 'chocolate', cn: '巧克力'}, {en: 'burger', cn: '汉堡'}, {en: 'chicken', cn: '鸡肉'},
+                {en: 'vegetables', cn: '蔬菜'}, {en: 'sandwich', cn: '三明治'}, {en: 'milk', cn: '牛奶'},
+                {en: 'fries', cn: '炸薯条'}, {en: 'tea', cn: '茶'}, {en: 'green tea', cn: '绿茶'}
+            ],
+            days: [
+                {en: 'Monday', cn: '周一'}, {en: 'Tuesday', cn: '周二'}, {en: 'Wednesday', cn: '周三'},
+                {en: 'Thursday', cn: '周四'}, {en: 'Friday', cn: '周五'}, {en: 'Saturday', cn: '周六'},
+                {en: 'Sunday', cn: '周日'}, {en: 'weekend', cn: '周末'}
+            ],
+            places: [
+                {en: 'apartment', cn: '公寓'}, {en: 'town', cn: '城镇'}, {en: 'village', cn: '村庄'},
+                {en: 'country', cn: '乡下'}, {en: 'shopping center', cn: '购物中心'}
+            ],
+            countries: [
+                {en: 'France', cn: '法国'}, {en: 'England', cn: '英格兰'}, {en: 'UK', cn: '英国'},
+                {en: 'Canada', cn: '加拿大'}, {en: 'London', cn: '伦敦'}, {en: 'Madrid', cn: '马德里'}
+            ],
+            jobs: [
+                {en: 'doctor', cn: '医生'}, {en: 'programmer', cn: '程序员'}, {en: 'tourist', cn: '游客'}
+            ],
+            auxVerbs: [{en:'do',cn:'助动词/做'},{en:'does',cn:'助动词(第三人称)'},{en:'have',cn:'有'},{en:'has',cn:'有(第三人称)'}],
+            questionWords: [{en:'why',cn:'为什么'},{en:'where',cn:'哪里'},{en:'what',cn:'什么'},{en:'when',cn:'什么时候'},{en:'or',cn:'或者'},{en:'how',cn:'怎么'}],
+            timeWords: [{en:'am',cn:'上午'},{en:'pm',cn:'下午'},{en:'what time',cn:'几点'},{en:'o\'clock',cn:'点'}],
+            frequency: [{en:'always',cn:'总是'},{en:'usually',cn:'通常'},{en:'often',cn:'经常'},{en:'sometimes',cn:'有时候'},{en:'never',cn:'从不'}],
+            others: [{en:'because',cn:'因为'},{en:'only',cn:'只,仅仅'},{en:'cheap',cn:'便宜的'},{en:'near',cn:'附近'},{en:'color',cn:'颜色'},{en:'Spanish',cn:'西班牙语'},{en:'Italian',cn:'意大利语'},{en:'pop',cn:'流行音乐'},{en:'rock',cn:'摇滚音乐'},{en:'music',cn:'音乐'},{en:'a',cn:'一'},{en:'an',cn:'一'},{en:'the',cn:'这/那'},{en:'Chinese',cn:'中文'},{en:'think',cn:'认为'},{en:'know',cn:'知道'},{en:'hungry',cn:'饿的'},{en:'sick',cn:'生病的'},{en:'part-time',cn:'兼职的'}],
+            reading: [
+                'Do you live in an apartment or a house? I live in a house.',
+                'Do you want a new boyfriend? No, I do not.',
+                'They do not drink beer and coffee. They only drink water.',
+                'Why do you like fast food? Because fast food is cheap.',
+                'Do your children study history? Yes, of course.',
+                'Where do you go tomorrow? I go to Germany to meet my sister.'
+            ],
+            fillBlank: [
+                {q: 'I ___ two brothers.', a: 'have', hint: '第一人称用 have'},
+                {q: 'My wife ___ a car.', a: 'has', hint: '第三人称单数用 has'},
+                {q: '___ you live here?', a: 'Do', hint: '疑问句用 Do'},
+                {q: '___ she work in a bank?', a: 'Does', hint: '第三人称疑问用 Does'},
+                {q: 'I ___ not drink coffee.', a: 'do', hint: '否定句助动词'},
+                {q: 'She ___ not like fast food.', a: 'does', hint: '第三人称否定用 does not'}
+            ],
+            translations: [
+                {cn: '你住在这里附近吗？', en: 'Do you live near here?'},
+                {cn: '你喜欢什么颜色？', en: 'What color do you like?'},
+                {cn: '他们说西班牙语吗？', en: 'Do they speak Spanish?'},
+                {cn: '不是，他们说意大利语。', en: 'No, they speak Italian.'},
+                {cn: '我们去公司。', en: 'We go to company.'},
+                {cn: '你听什么音乐？', en: 'What music do you listen to?'},
+                {cn: '我听流行音乐。', en: 'I listen to pop music.'}
+            ]
+        };
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US'; utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            } else { alert('浏览器不支持语音朗读'); }
+        }
+        function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+        let dictationMode = 'cn2en', currentQuestions = [], currentIndex = 0, wrongAttempts = 0, score = 0;
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            if (tabName === 'grammar') initVerbPhrases();
+            if (tabName === 'vocab') initVocab();
+            if (tabName === 'reading') initReading();
+        }
+        function createVocabCard(item) {
+            return '<div class="vocab-card"><button class="speaker-btn" onclick="speak(' + "'" + item.en.replace(/'/g, "\\'") + "'" + ')">🔊</button><div class="en">' + item.en + '</div><div>' + item.cn + '</div></div>';
+        }
+        function initVerbPhrases() { document.getElementById('verb-phrases').innerHTML = lessonData.verbPhrases.map(createVocabCard).join(''); }
+        function initVocab() {
+            document.getElementById('vocab-verbs').innerHTML = lessonData.verbPhrases.map(createVocabCard).join('');
+            document.getElementById('vocab-new').innerHTML = lessonData.newWords.map(createVocabCard).join('');
+            document.getElementById('vocab-food').innerHTML = lessonData.food.map(createVocabCard).join('');
+            document.getElementById('vocab-days').innerHTML = lessonData.days.map(createVocabCard).join('');
+            document.getElementById('vocab-places').innerHTML = lessonData.places.map(createVocabCard).join('');
+            document.getElementById('vocab-countries').innerHTML = lessonData.countries.map(createVocabCard).join('');
+            document.getElementById('vocab-jobs').innerHTML = lessonData.jobs.map(createVocabCard).join('');
+            document.getElementById('vocab-aux').innerHTML = lessonData.auxVerbs.map(createVocabCard).join('');
+            document.getElementById('vocab-question').innerHTML = lessonData.questionWords.map(createVocabCard).join('');
+            document.getElementById('vocab-time').innerHTML = lessonData.timeWords.map(createVocabCard).join('');
+            document.getElementById('vocab-frequency').innerHTML = lessonData.frequency.map(createVocabCard).join('');
+            document.getElementById('vocab-others').innerHTML = lessonData.others.map(createVocabCard).join('');
+        }
+        function initReading() {
+            document.getElementById('reading-sentences').innerHTML = lessonData.reading.map(function(s) {
+                return '<div class="reading-item">' + s + '<button class="speaker-btn" onclick="speak(' + "'" + s.replace(/'/g, "\\'") + "'" + ')">🔊</button></div>';
+            }).join('');
+        }
+        function setDictationMode(mode) {
+            dictationMode = mode;
+            document.querySelectorAll('.mode-toggle button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            startDictation();
+        }
+        function startDictation() {
+            const allVocab = [...lessonData.verbPhrases, ...lessonData.newWords, ...lessonData.food, ...lessonData.days, ...lessonData.places, ...lessonData.countries, ...lessonData.jobs, ...lessonData.auxVerbs, ...lessonData.questionWords, ...lessonData.timeWords, ...lessonData.frequency, ...lessonData.others];
+            currentQuestions = shuffle(allVocab).slice(0, 20);
+            currentIndex = 0; score = 0;
+            showDictationQuestion();
+        }
+        function showDictationQuestion() {
+            if (currentIndex >= currentQuestions.length) { showCompletion('dictation-quiz', score, currentQuestions.length); return; }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            const prompt = dictationMode === 'cn2en' ? q.cn : q.en;
+            const answer = dictationMode === 'cn2en' ? q.en : q.cn;
+            document.getElementById('dictation-quiz').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">' + (dictationMode === 'cn2en' ? '请输入英文：' : '请输入中文：') + '<br><br><strong>' + prompt + '</strong>' +
+                (dictationMode === 'cn2en' ? '<button class="quiz-btn" onclick="speak(' + "'" + answer.replace(/'/g, "\\'") + "'" + ')" style="margin-left:10px;">🔊 朗读</button>' : '') + '</div>' +
+                '<input type="text" class="quiz-input" id="answer-input" placeholder="请输入答案">' +
+                '<br><button class="quiz-btn" onclick="checkDictationAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkDictationAnswer(); };
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+        function checkDictationAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
+            const q = currentQuestions[currentIndex];
+            const correctAnswer = dictationMode === 'cn2en' ? q.en : q.cn;
+            const userAnswer = input.value.trim();
+            if (!userAnswer) return;
+            if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+                score++;
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct'; feedback.textContent = '回答正确！';
+                setTimeout(() => { currentIndex++; showDictationQuestion(); }, 1200);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '回答错误（第' + wrongAttempts + '次尝试）';
+                input.value = ''; input.focus();
+                const questionText = dictationMode === 'cn2en' ? q.cn : q.en; WrongAnswersManager.save({type: 'dictation', q: questionText, a: correctAnswer, lesson: 'L2'});
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + correctAnswer.replace(/'/g, "\\'") + "'" + ')">显示答案</button>';
+            }
+        }
+        function showAnswer(answer) {
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">正确答案：' + answer + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showDictationQuestion(); }, 5000);
+        }
+        function startFillBlank() {
+            currentQuestions = shuffle(lessonData.fillBlank).slice(0, 8);
+            currentIndex = 0; score = 0;
+            showFillBlankQuestion();
+        }
+        function showFillBlankQuestion() {
+            if (currentIndex >= currentQuestions.length) { showCompletion('fillblank-quiz', score, currentQuestions.length); return; }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            document.getElementById('fillblank-quiz').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">' + q.q.replace('___', '_____') + '</div>' +
+                '<div class="hint-text" id="hint-text">提示：' + q.hint + '</div>' +
+                '<input type="text" class="quiz-input" id="answer-input" placeholder="填入 do/does/have/has">' +
+                '<br><button class="quiz-btn" onclick="checkFillBlankAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkFillBlankAnswer(); };
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+        function checkFillBlankAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback'), hintText = document.getElementById('hint-text');
+            const q = currentQuestions[currentIndex];
+            const userAnswer = input.value.trim().toLowerCase();
+            if (!userAnswer) return;
+            if (userAnswer === q.a.toLowerCase()) {
+                score++;
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct'; feedback.textContent = '回答正确！';
+                WrongAnswersManager.recordCorrect({type: 'fillblank', q: q.q, a: q.a, hint: q.hint, lesson: 'L2'});
+                setTimeout(() => { currentIndex++; showFillBlankQuestion(); }, 1200);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '回答错误（第' + wrongAttempts + '次尝试）';
+                hintText.classList.add('show');
+                input.value = ''; input.focus();
+                WrongAnswersManager.save({type: 'fillblank', q: q.q, a: q.a, hint: q.hint, lesson: 'L2'});
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showFillBlankAnswer()">显示答案</button>';
+            }
+        }
+        function showFillBlankAnswer() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">正确答案：' + q.a + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showFillBlankQuestion(); }, 5000);
+        }
+        function startTranslate() {
+            currentQuestions = shuffle(lessonData.translations).slice(0, 8);
+            currentIndex = 0; score = 0;
+            showTranslateQuestion();
+        }
+        function showTranslateQuestion() {
+            if (currentIndex >= currentQuestions.length) { showCompletion('translate-quiz', score, currentQuestions.length); return; }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            document.getElementById('translate-quiz').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">请将以下中文翻译成英文：<br><br><strong style="font-size:1.3em;">"' + q.cn + '"</strong></div>' +
+                '<textarea class="quiz-input" id="answer-input" rows="3" placeholder="请输入英文翻译"></textarea>' +
+                '<br><button class="quiz-btn" onclick="checkTranslateAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+        function checkTranslateAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
+            const q = currentQuestions[currentIndex];
+            const userAnswer = input.value.trim().toLowerCase().replace(/[^a-z\s]/g, '');
+            const correctAnswer = q.en.toLowerCase().replace(/[^a-z\s]/g, '');
+            if (!userAnswer) return;
+            if (userAnswer === correctAnswer) {
+                score++;
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct'; feedback.textContent = '回答正确！';
+                WrongAnswersManager.recordCorrect({type: 'translate', cn: q.cn, en: q.en, lesson: 'L2'});
+                setTimeout(() => { currentIndex++; showTranslateQuestion(); }, 1200);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '回答错误（第' + wrongAttempts + '次尝试）';
+                WrongAnswersManager.save({type: 'translate', cn: q.cn, en: q.en, lesson: 'L2'});
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showTranslateAnswer()">显示答案</button>';
+            }
+        }
+        function showTranslateAnswer() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">参考答案：' + q.en + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showTranslateQuestion(); }, 5000);
+        }
+        function showCompletion(containerId, score, total) {
+            const percentage = Math.round(score / total * 100);
+            let stars = '⭐';
+            if (percentage >= 60) stars = '⭐⭐';
+            if (percentage >= 80) stars = '⭐⭐⭐';
+            if (percentage === 100) stars = '🏆⭐⭐⭐🏆';
+            document.getElementById(containerId).innerHTML = '<div class="completion-message"><h2>练习完成！</h2><div class="stars">' + stars + '</div><p style="font-size:1.3em;">得分：' + score + ' / ' + total + ' (' + percentage + '%)</p><button class="quiz-btn" onclick="location.reload()">再来一次</button></div>';
+        }
+        initVerbPhrases(); initVocab(); initReading();
+    </script>
+</body>
+</html>
