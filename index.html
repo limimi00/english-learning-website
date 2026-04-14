@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>英语学习网站</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 25px 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+            font-size: clamp(0.85rem, 3vw, 1rem);
+        }
+        .lessons { display: grid; gap: 15px; }
+        .lesson-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            display: block;
+            position: relative;
+        }
+        .lesson-card:active { transform: scale(0.98); }
+        .lesson-card h2 { font-size: clamp(1.1rem, 4vw, 1.5rem); margin-bottom: 8px; }
+        .lesson-card p { 
+            opacity: 0.9; 
+            line-height: 1.5; 
+            font-size: clamp(0.85rem, 3vw, 1rem);
+        }
+        .lesson-card .topics { 
+            margin-top: 12px; 
+            font-size: clamp(0.75rem, 2.5vw, 0.85rem); 
+            opacity: 0.8; 
+        }
+        
+        .wrong-card {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%) !important;
+        }
+        .wrong-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: white;
+            color: #ff6b6b;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            display: none;
+        }
+        .wrong-badge.show { display: block; }
+        
+        .practice-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 2px solid #eee;
+        }
+        .practice-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: clamp(1rem, 4vw, 1.2rem);
+        }
+        .practice-modes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .practice-btn {
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 18px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: #667eea;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+        }
+        .practice-btn:active {
+            background: #667eea;
+            color: white;
+            transform: scale(0.95);
+        }
+        .practice-btn .icon { font-size: 1.8rem; margin-bottom: 6px; }
+        .practice-btn div { font-size: 0.9rem; font-weight: 500; }
+        
+        .wrong-practice-btn {
+            background: #fff5f5;
+            border: 2px solid #ff6b6b;
+            color: #ff6b6b;
+        }
+        .wrong-practice-btn:active {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { padding: 40px; border-radius: 20px; }
+            .practice-modes { grid-template-columns: repeat(4, 1fr); }
+            .practice-btn { padding: 25px 15px; min-height: 120px; }
+            .practice-btn .icon { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 英语学习网站</h1>
+        <p class="subtitle">基于你的学习资料，全面提升英语能力</p>
+        
+        <div class="lessons">
+            <a href="lesson1.html" class="lesson-card">
+                <h2>📚 Lesson 1</h2>
+                <p>am / is / are</p>
+                <div class="topics">be动词 · 人称搭配 · 肯定/否定/疑问句</div>
+            </a>
+            
+            <a href="lesson2.html" class="lesson-card">
+                <h2>📚 Lesson 2</h2>
+                <p>do / does / have / has</p>
+                <div class="topics">一般现在时 · 动词短语 · 日常对话</div>
+            </a>
+            
+            <a href="lesson3.html" class="lesson-card">
+                <h2>📚 Lesson 3</h2>
+                <p>can / 第三人称单数</p>
+                <div class="topics">表达能力 · 请求许可 · 代词宾格</div>
+            </a>
+            
+            <a href="lesson4.html" class="lesson-card">
+                <h2>📚 Lesson 4</h2>
+                <p>现在式 / 过去式 / 未来式</p>
+                <div class="topics">规则动词 · 不规则动词 · 时态对比</div>
+            </a>
+            
+            <a href="lesson5.html" class="lesson-card">
+                <h2>📚 Lesson 5</h2>
+                <p>be going to / 时态应用</p>
+                <div class="topics">计划表达 · 短文阅读 · 日常对话</div>
+            </a>
+            
+            <a href="wrong.html" class="lesson-card wrong-card">
+                <span class="wrong-badge" id="wrong-count">0</span>
+                <h2>📝 错题练习</h2>
+                <p>针对性巩固薄弱环节</p>
+                <div class="topics">自动收集 · 5次正确后移除</div>
+            </a>
+        </div>
+        
+        <div class="practice-section">
+            <h3>🎯 综合练习</h3>
+            <div class="practice-modes">
+                <a href="practice.html?mode=dictation" class="practice-btn">
+                    <div class="icon">✍️</div>
+                    <div>单词默写</div>
+                </a>
+                <a href="practice.html?mode=fillblank" class="practice-btn">
+                    <div class="icon">📝</div>
+                    <div>填空练习</div>
+                </a>
+                <a href="practice.html?mode=translate" class="practice-btn">
+                    <div class="icon">🌐</div>
+                    <div>翻译练习</div>
+                </a>
+                <a href="wrong.html" class="practice-btn wrong-practice-btn">
+                    <div class="icon">❌</div>
+                    <div>错题练习</div>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function updateWrongCount() {
+            const keys = ['english_learning_wrong_answers_l1', 'english_learning_wrong_answers_l2', 'english_learning_wrong_answers_l3', 'english_learning_wrong_answers_l4', 'english_learning_wrong_answers_l5'];
+            let count = 0;
+            keys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) count += Object.keys(JSON.parse(data)).length;
+            });
+            if (count > 0) {
+                document.getElementById('wrong-count').textContent = count;
+                document.getElementById('wrong-count').classList.add('show');
+            }
+        }
+        updateWrongCount();
+    </script>
+</body>
+</html>
