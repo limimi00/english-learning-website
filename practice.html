@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>综合练习 - 英语学习</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; 
+            padding: 10px;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 16px; 
+            padding: 25px 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        h1 { 
+            color: #333; 
+            font-size: clamp(1.3rem, 5vw, 1.8rem);
+        }
+        .back-btn { 
+            background: #667eea; 
+            color: white; 
+            padding: 10px 18px;
+            border-radius: 8px; 
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .mode-selector { 
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .mode-btn { 
+            padding: 15px 10px;
+            background: #f0f0f0; 
+            border: 2px solid transparent;
+            border-radius: 10px; 
+            cursor: pointer; 
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .mode-btn.active { 
+            background: #667eea; 
+            color: white; 
+        }
+        .quiz-container { 
+            background: #f8f9fa; 
+            padding: 25px 15px;
+            border-radius: 12px;
+            min-height: 300px;
+            text-align: center;
+        }
+        .quiz-progress { 
+            margin-bottom: 15px; 
+            color: #667eea; 
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .quiz-question { 
+            font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+            margin: 20px 0; 
+            color: #333;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .quiz-input { 
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd; 
+            border-radius: 10px; 
+            font-size: 1.1rem;
+            text-align: center; 
+            margin: 15px 0;
+            -webkit-appearance: none;
+        }
+        .quiz-input.correct { border-color: #28a745; background: #d4edda; }
+        .quiz-input.wrong { border-color: #dc3545; background: #f8d7da; }
+        .quiz-btn { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 14px 35px;
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 1.05rem;
+            margin: 8px 5px;
+            font-weight: 500;
+            min-width: 120px;
+        }
+        .quiz-btn:active { transform: scale(0.96); }
+        .quiz-btn.hint-btn { background: #ffc107; color: #333; }
+        .quiz-btn.secondary { background: #6c757d; }
+        .quiz-feedback { 
+            margin-top: 15px; 
+            padding: 12px;
+            border-radius: 8px; 
+            font-size: 1rem;
+            display: none; 
+        }
+        .quiz-feedback.show { display: block; }
+        .quiz-feedback.correct { background: #d4edda; color: #155724; }
+        .quiz-feedback.wrong { background: #f8d7da; color: #721c24; }
+        .lesson-tag { 
+            display: inline-block; 
+            background: #667eea; 
+            color: white; 
+            padding: 4px 10px;
+            border-radius: 4px; 
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+        .mode-toggle { margin-bottom: 20px; }
+        .mode-toggle button { 
+            padding: 10px 18px;
+            margin: 0 4px; 
+            border: 2px solid #667eea; 
+            background: white; 
+            color: #667eea; 
+            border-radius: 8px; 
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .mode-toggle button.active { background: #667eea; color: white; }
+        .completion-message { text-align: center; padding: 30px 15px; }
+        .completion-message h2 { 
+            color: #28a745; 
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        .stars { font-size: 2.5rem; margin: 15px 0; }
+        .answer-display { 
+            font-size: 1.2rem;
+            color: #667eea; 
+            font-weight: bold; 
+            margin: 12px 0; 
+            padding: 15px;
+            background: #e7e9ff; 
+            border-radius: 8px;
+            word-break: break-word;
+        }
+        .hint-text { color: #888; font-size: 0.9rem; margin: 10px 0; display: none; }
+        .hint-text.show { display: block; }
+
+        @media (min-width: 600px) {
+            .mode-selector { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { padding: 40px; border-radius: 20px; }
+            .quiz-container { padding: 40px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>综合练习</h1>
+            <a href="index.html" class="back-btn">← 返回</a>
+        </div>
+        <div class="mode-selector">
+            <button class="mode-btn" id="btn-dictation" onclick="setMode('dictation')">单词默写</button>
+            <button class="mode-btn" id="btn-fillblank" onclick="setMode('fillblank')">填空练习</button>
+            <button class="mode-btn" id="btn-translate" onclick="setMode('translate')">翻译练习</button>
+        </div>
+        <div class="quiz-container" id="quiz-area">
+            <div style="text-align:center;padding:40px 20px;">
+                <h2 style="margin-bottom:15px;">欢迎来到综合练习</h2>
+                <p style="margin:15px 0;color:#666;">请从上方选择一种练习模式开始</p>
+                <p style="color:#999;font-size:0.9rem;">所有题目都来自你的学习资料</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 错题管理器
+        const WrongAnswersManager = {
+            getStorageKey(lesson) { return `english_learning_wrong_answers_l${lesson}`; },
+            save(wrongItem, lessonNum) {
+                const key = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
+                const storageKey = this.getStorageKey(lessonNum);
+                const all = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                if (!all[key]) { all[key] = { ...wrongItem, correctCount: 0, lastWrong: Date.now(), lesson: lessonNum }; }
+                localStorage.setItem(storageKey, JSON.stringify(all));
+            },
+            recordCorrect(wrongItem, lessonNum) {
+                const key = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
+                const storageKey = this.getStorageKey(lessonNum);
+                const all = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                if (all[key]) { 
+                    all[key].correctCount++; 
+                    if (all[key].correctCount >= 5) { delete all[key]; } 
+                    localStorage.setItem(storageKey, JSON.stringify(all)); 
+                }
+            }
+        };
+
+        // 课程数据
+                const allData = {
+            lesson1: {
+                vocab: [
+                    {en: 'teacher', cn: '老师'}, {en: 'student', cn: '学生'}, {en: 'friend', cn: '朋友'},
+                    {en: 'boss', cn: '老板'}, {en: 'colleague', cn: '同事'}, {en: 'roommate', cn: '室友'},
+                    {en: 'boy', cn: '男孩'}, {en: 'girl', cn: '女孩'}, {en: 'man', cn: '男人'}, {en: 'woman', cn: '女人'},
+                    {en: 'men', cn: '男人们'}, {en: 'women', cn: '女人们'}, {en: 'child', cn: '孩子'}, {en: 'children', cn: '孩子们'},
+                    {en: 'husband', cn: '丈夫'}, {en: 'wife', cn: '妻子'}, {en: 'mother', cn: '母亲'}, {en: 'father', cn: '父亲'},
+                    {en: 'son', cn: '儿子'}, {en: 'daughter', cn: '女儿'}, {en: 'sister', cn: '姐妹'}, {en: 'brother', cn: '兄弟'},
+                    {en: 'boyfriend', cn: '男朋友'}, {en: 'girlfriend', cn: '女朋友'}, {en: 'person', cn: '人'}, {en: 'people', cn: '人们'},
+                    {en: 'busy', cn: '忙碌的'}, {en: 'late', cn: '迟到的'}, {en: 'early', cn: '早的'}, {en: 'tired', cn: '累的'},
+                    {en: 'bad', cn: '坏的'}, {en: 'good', cn: '好的'}, {en: 'OK', cn: '好的'}, {en: 'okay', cn: '好的'},
+                    {en: 'cold', cn: '冷的'}, {en: 'hot', cn: '热的'}, {en: 'happy', cn: '开心的'}, {en: 'sleepy', cn: '困倦的'},
+                    {en: 'very', cn: '非常'}, {en: 'every', cn: '每一'}, {en: 'big', cn: '大的'}, {en: 'small', cn: '小的'},
+                    {en: 'old', cn: '旧的/老的'}, {en: 'new', cn: '新的'}, {en: 'young', cn: '年轻的'}, {en: 'fast', cn: '快的'},
+                    {en: 'slow', cn: '慢的'}, {en: 'long', cn: '长的'}, {en: 'short', cn: '短的/矮的'}, {en: 'tall', cn: '高的'},
+                    {en: 'far', cn: '远的'}, {en: 'near', cn: '近的'}, {en: 'married', cn: '已婚的'}, {en: 'single', cn: '单身的'},
+                    {en: 'quiet', cn: '安静的'}, {en: 'loud', cn: '吵闹的'}, {en: 'easy', cn: '容易的'}, {en: 'difficult', cn: '困难的'},
+                    {en: 'different', cn: '不同的'}, {en: 'same', cn: '相同的'}, {en: 'favorite', cn: '最喜欢的'}, {en: 'beautiful', cn: '美丽的'},
+                    {en: 'pretty', cn: '漂亮的'}, {en: 'right', cn: '正确的'}, {en: 'sad', cn: '难过的'}, {en: 'good-looking', cn: '好看的'},
+                    {en: 'interesting', cn: '有趣的'}, {en: 'room', cn: '房间'}, {en: 'company', cn: '公司'}, {en: 'office', cn: '办公室'},
+                    {en: 'school', cn: '学校'}, {en: 'classroom', cn: '教室'}, {en: 'here', cn: '这里'}, {en: 'there', cn: '那里'},
+                    {en: 'centre', cn: '中心'}, {en: 'center', cn: '中心'}, {en: 'home', cn: '家'}, {en: 'street', cn: '街道'}, {en: 'hotel', cn: '酒店'},
+                    {en: 'China', cn: '中国'}, {en: 'Philippines', cn: '菲律宾'}, {en: 'Korea', cn: '韩国'}, {en: 'Japan', cn: '日本'},
+                    {en: 'Malaysia', cn: '马来西亚'}, {en: 'Spain', cn: '西班牙'}, {en: 'Italy', cn: '意大利'}, {en: 'America', cn: '美国'},
+                    {en: 'Makati', cn: '马卡蒂'}, {en: 'Manila', cn: '马尼拉'}, {en: 'London', cn: '伦敦'}, {en: 'Brazil', cn: '巴西'},
+                    {en: 'Vietnam', cn: '越南'}, {en: 'Scotland', cn: '苏格兰'}, {en: 'Ireland', cn: '爱尔兰'}, {en: 'phone', cn: '手机'},
+                    {en: 'table', cn: '桌子'}, {en: 'chair', cn: '椅子'}, {en: 'bag', cn: '包'}, {en: 'window', cn: '窗户'}, {en: 'door', cn: '门'},
+                    {en: 'board', cn: '板/白板'}, {en: 'laptop', cn: '笔记本电脑'}, {en: 'book', cn: '书'}, {en: 'umbrella', cn: '雨伞'},
+                    {en: 'card', cn: '卡片'}, {en: 'bed', cn: '床'}, {en: 'this', cn: '这个'}, {en: 'that', cn: '那个'},
+                    {en: 'glasses', cn: '眼镜'}, {en: 'wallet', cn: '钱包'}, {en: 'cat', cn: '猫'}, {en: 'CD', cn: '光盘'}, {en: 'DVD', cn: '影碟'},
+                    {en: 'red', cn: '红色'}, {en: 'green', cn: '绿色'}, {en: 'yellow', cn: '黄色'}, {en: 'blue', cn: '蓝色'},
+                    {en: 'orange', cn: '橙色'}, {en: 'brown', cn: '棕色'}, {en: 'black', cn: '黑色'}, {en: 'white', cn: '白色'},
+                    {en: 'pink', cn: '粉色'}, {en: 'grey', cn: '灰色'}, {en: 'gray', cn: '灰色'}, {en: 'I', cn: '我'},
+                    {en: 'you', cn: '你/你们'}, {en: 'he', cn: '他'}, {en: 'she', cn: '她'}, {en: 'it', cn: '它'},
+                    {en: 'we', cn: '我们'}, {en: 'they', cn: '他们'}, {en: 'my', cn: '我的'}, {en: 'your', cn: '你的/你们的'},
+                    {en: 'his', cn: '他的'}, {en: 'her', cn: '她的'}, {en: 'its', cn: '它的'}, {en: 'our', cn: '我们的'}, {en: 'their', cn: '他们的'},
+                    {en: 'am', cn: '是'}, {en: 'is', cn: '是'}, {en: 'are', cn: '是'}, {en: 'not', cn: '不'},
+                    {en: 'engineer', cn: '工程师'}, {en: 'nurse', cn: '护士'}, {en: 'singer', cn: '歌手'}, {en: 'shop assistant', cn: '店员'}, {en: 'band', cn: '乐队'},
+                    {en: 'chicken', cn: '鸡肉'}, {en: 'beef', cn: '牛肉'}, {en: 'toast', cn: '吐司'}, {en: 'cafe', cn: '咖啡馆'},
+                    {en: 'and', cn: '和'}, {en: 'but', cn: '但是'}, {en: 'yes', cn: '是'}, {en: 'no', cn: '不'},
+                    {en: 'today', cn: '今天'}, {en: 'day', cn: '天'}, {en: 'together', cn: '一起'}, {en: 'think', cn: '想/认为'},
+                    {en: 'now', cn: '现在'}, {en: 'at home', cn: '在家'}, {en: 'every day', cn: '每天'}, {en: 'best', cn: '最好的'},
+                    {en: 'one', cn: '一'}, {en: 'just', cn: '只是/刚刚'}, {en: 'in a hurry', cn: '匆忙'}, {en: 'number', cn: '号码'},
+                    {en: 'address', cn: '地址'}, {en: 'email', cn: '电子邮件'}, {en: 'surname', cn: '姓氏'}, {en: 'who', cn: '谁'}, {en: 'what color', cn: '什么颜色'}
+                ],
+                fillBlank: [
+                    {q: 'I ___ happy.', a: 'am', hint: '第一人称用 am'}, {q: 'She ___ tired.', a: 'is', hint: '第三人称单数用 is'},
+                    {q: 'They ___ good students.', a: 'are', hint: '复数用 are'}, {q: '___ I late?', a: 'Am', hint: '第一人称疑问用 Am'},
+                    {q: '___ you cold?', a: 'Are', hint: 'you 疑问用 Are'}, {q: '___ she your friend?', a: 'Is', hint: '第三人称疑问用 Is'}
+                ],
+                translate: [
+                    {cn: '我很忙，也很累。', en: 'I am busy and tired.'}, {cn: '你冷吗？', en: 'Are you cold?'},
+                    {cn: '不，我很热。', en: 'No, I am hot.'}, {cn: '我们是学生，你是老师。', en: 'We are students, you are a teacher.'}
+                ]
+            },
+            lesson2: {
+                vocab: [
+                    {en: 'live in apartment', cn: '住在公寓'}, {en: 'have children', cn: '有孩子'},
+                    {en: 'watch TV', cn: '看电视'}, {en: 'watch movies', cn: '看电影'}, {en: 'listen to music', cn: '听音乐'},
+                    {en: 'eat fast food', cn: '吃快餐'}, {en: 'drink coffee', cn: '喝咖啡'}, {en: 'speak English', cn: '说英语'},
+                    {en: 'want a new car', cn: '想要新车'}, {en: 'like dogs', cn: '喜欢狗'}, {en: 'work in a bank', cn: '在银行工作'},
+                    {en: 'study Spanish', cn: '学西班牙语'}, {en: 'read books', cn: '看书'}, {en: 'read news', cn: '看新闻'},
+                    {en: 'go to France', cn: '去法国'}, {en: 'meet', cn: '遇见'}, {en: 'get up', cn: '起床'}, {en: 'wake up', cn: '醒来'},
+                    {en: 'have a shower', cn: '洗澡'}, {en: 'go to work', cn: '去上班'}, {en: 'start work', cn: '开始工作'},
+                    {en: 'finish work', cn: '下班'}, {en: 'leave home', cn: '离开家'}, {en: 'go shopping', cn: '去购物'},
+                    {en: 'go to the gym', cn: '去健身房'}, {en: 'cook dinner', cn: '做晚饭'}, {en: 'make dinner', cn: '做晚饭'},
+                    {en: 'do housework', cn: '做家务'}, {en: 'go to bed', cn: '上床睡觉'}, {en: 'sleep', cn: '睡觉'},
+                    {en: 'first time', cn: '第一次'}, {en: 'hair', cn: '头发'}, {en: 'haircut', cn: '理发'},
+                    {en: 'traffic', cn: '交通'}, {en: 'problem', cn: '问题'}, {en: 'fantastic', cn: '极好的'},
+                    {en: 'beer', cn: '啤酒'}, {en: 'history', cn: '历史'}, {en: 'house', cn: '房子'}, {en: 'magazine', cn: '杂志'},
+                    {en: 'university', cn: '大学'}, {en: 'manager', cn: '经理'}, {en: 'sister', cn: '姐妹'}, {en: 'tomorrow', cn: '明天'},
+                    {en: 'Germany', cn: '德国'}, {en: 'businessman', cn: '商人'}, {en: 'great', cn: '棒的'}, {en: 'accountant', cn: '会计'},
+                    {en: 'rich', cn: '富有的'}, {en: 'actor', cn: '演员'}, {en: 'fish', cn: '鱼'}, {en: 'pasta', cn: '意大利面'},
+                    {en: 'potatoes', cn: '土豆'}, {en: 'cereal', cn: '谷物'}, {en: 'juice', cn: '果汁'}, {en: 'meat', cn: '肉'},
+                    {en: 'rice', cn: '米饭'}, {en: 'fruit', cn: '水果'}, {en: 'sugar', cn: '糖'}, {en: 'wine', cn: '葡萄酒'},
+                    {en: 'breakfast', cn: '早餐'}, {en: 'lunch', cn: '午餐'}, {en: 'dinner', cn: '晚餐'}, {en: 'beef', cn: '牛肉'},
+                    {en: 'eggs', cn: '鸡蛋'}, {en: 'bread', cn: '面包'}, {en: 'salt', cn: '盐'}, {en: 'water', cn: '水'},
+                    {en: 'pork', cn: '猪肉'}, {en: 'salad', cn: '沙拉'}, {en: 'cheese', cn: '奶酪'}, {en: 'chocolate', cn: '巧克力'},
+                    {en: 'burger', cn: '汉堡'}, {en: 'chicken', cn: '鸡肉'}, {en: 'vegetables', cn: '蔬菜'}, {en: 'sandwich', cn: '三明治'},
+                    {en: 'milk', cn: '牛奶'}, {en: 'fries', cn: '薯条'}, {en: 'tea', cn: '茶'}, {en: 'green tea', cn: '绿茶'},
+                    {en: 'Monday', cn: '周一'}, {en: 'Tuesday', cn: '周二'}, {en: 'Wednesday', cn: '周三'}, {en: 'Thursday', cn: '周四'},
+                    {en: 'Friday', cn: '周五'}, {en: 'Saturday', cn: '周六'}, {en: 'Sunday', cn: '周日'}, {en: 'weekend', cn: '周末'},
+                    {en: 'apartment', cn: '公寓'}, {en: 'town', cn: '城镇'}, {en: 'village', cn: '村庄'}, {en: 'country', cn: '乡下'},
+                    {en: 'shopping center', cn: '购物中心'}, {en: 'France', cn: '法国'}, {en: 'England', cn: '英格兰'}, {en: 'UK', cn: '英国'},
+                    {en: 'Canada', cn: '加拿大'}, {en: 'London', cn: '伦敦'}, {en: 'Madrid', cn: '马德里'}, {en: 'doctor', cn: '医生'},
+                    {en: 'programmer', cn: '程序员'}, {en: 'tourist', cn: '游客'}, {en: 'do', cn: '助动词/做'}, {en: 'does', cn: '助动词(第三人称)'},
+                    {en: 'have', cn: '有'}, {en: 'has', cn: '有(第三人称)'}, {en: 'why', cn: '为什么'}, {en: 'where', cn: '哪里'},
+                    {en: 'what', cn: '什么'}, {en: 'when', cn: '什么时候'}, {en: 'or', cn: '或者'}, {en: 'how', cn: '怎么'},
+                    {en: 'am', cn: '上午'}, {en: 'pm', cn: '下午'}, {en: 'what time', cn: '几点'}, {en: 'o\'clock', cn: '点'},
+                    {en: 'always', cn: '总是'}, {en: 'usually', cn: '通常'}, {en: 'often', cn: '经常'}, {en: 'sometimes', cn: '有时候'}, {en: 'never', cn: '从不'},
+                    {en: 'because', cn: '因为'}, {en: 'only', cn: '只,仅仅'}, {en: 'cheap', cn: '便宜的'}, {en: 'near', cn: '附近'},
+                    {en: 'color', cn: '颜色'}, {en: 'Spanish', cn: '西班牙语'}, {en: 'Italian', cn: '意大利语'}, {en: 'pop', cn: '流行音乐'},
+                    {en: 'rock', cn: '摇滚音乐'}, {en: 'music', cn: '音乐'}, {en: 'a', cn: '一'}, {en: 'an', cn: '一'}, {en: 'the', cn: '这/那'},
+                    {en: 'Chinese', cn: '中文'}, {en: 'think', cn: '认为'}, {en: 'know', cn: '知道'}, {en: 'hungry', cn: '饿的'}, {en: 'sick', cn: '生病的'},
+                    {en: 'part-time', cn: '兼职的'}
+                ],
+                fillBlank: [
+                    {q: 'I ___ two brothers.', a: 'have', hint: '第一人称用 have'}, {q: 'My wife ___ a car.', a: 'has', hint: '第三人称单数用 has'},
+                    {q: '___ you live here?', a: 'Do', hint: '疑问句用 Do'}, {q: '___ she work in a bank?', a: 'Does', hint: '第三人称疑问用 Does'}
+                ],
+                translate: [
+                    {cn: '你住在这里附近吗？', en: 'Do you live near here?'}, {cn: '你喜欢什么颜色？', en: 'What color do you like?'},
+                    {cn: '他们说西班牙语吗？', en: 'Do they speak Spanish?'}, {cn: '我听流行音乐。', en: 'I listen to pop music.'}
+                ]
+            },
+            lesson3: {
+                vocab: [
+                    {en: 'cinema', cn: '电影院'}, {en: 'beach', cn: '海滩'}, {en: 'play tennis', cn: '打网球'},
+                    {en: 'play the piano', cn: '弹钢琴'}, {en: 'play computer games', cn: '玩电脑游戏'}, {en: 'do sport', cn: '做运动'},
+                    {en: 'walk', cn: '走路'}, {en: 'swim', cn: '游泳'}, {en: 'policeman', cn: '警察'}, {en: 'birthday', cn: '生日'},
+                    {en: 'angry', cn: '生气的'}, {en: 'restaurant', cn: '餐厅'}, {en: 'bar', cn: '酒吧'}, {en: 'give', cn: '给'},
+                    {en: 'call', cn: '打电话'}, {en: 'draw', cn: '画画'}, {en: 'language', cn: '语言'}, {en: 'pasta', cn: '意大利面'},
+                    {en: 'Italian', cn:'意大利的'}, {en: 'shower', cn: '淋浴'}, {en: 'gym', cn: '健身房'}, {en: 'evening', cn: '晚上'},
+                    {en: 'sleep', cn: '睡觉'}, {en: 'office', cn: '办公室'}, {en: 'after work', cn: '下班后'}, {en: 'sushi', cn: '寿司'},
+                    {en: 'Japanese', cn: '日本的'}, {en: 'stop', cn: '停止'}, {en: 'smoke cigarettes', cn: '抽烟'}, {en: 'change money', cn: '换钱'},
+                    {en: 'use the Internet', cn: '上网'}, {en: 'take photos', cn: '拍照'}, {en: 'drive', cn: '开车'},
+                    {en: 'pay by card', cn: '刷卡'}, {en: 'pay by cash', cn: '付现金'}, {en: 'park', cn: '停车'}, {en: 'come', cn: '来'},
+                    {en: 'see', cn: '看见'}, {en: 'hear', cn: '听见'}, {en: 'help', cn: '帮助'}, {en: 'sit', cn: '坐'},
+                    {en: 'tonight', cn: '今晚'}, {en: 'write', cn: '写'}, {en: 'museum', cn: '博物馆'}, {en: 'mobile phone', cn: '手机'},
+                    {en: 'hospital', cn: '医院'}, {en: 'red wine', cn: '红酒'}, {en: 'football', cn: '足球'}, {en: 'shopping center', cn: '购物中心'},
+                    {en: 'at night', cn: '在夜间'}, {en: 'that\'s why', cn: '那就是为什么'}, {en: 'doctor', cn: '医生'}, {en: 'nurse', cn: '护士'},
+                    {en: 'waiter', cn: '服务员(male)'}, {en: 'waitress', cn: '服务员(female)'}, {en: 'lawyer', cn: '律师'},
+                    {en: 'factory worker', cn: '工厂工人'}, {en: 'programmer', cn: '程序员'}, {en: 'tourist', cn: '游客'}, {en: 'guide', cn: '向导'},
+                    {en: 'singer', cn: '歌手'}, {en: 'soldier', cn: '士兵'}, {en: 'hairdresser', cn: '理发师'}, {en: 'shop assistant', cn: '店员'},
+                    {en: 'can', cn: '能,可以'}, {en: 'cannot', cn: '不能,不可以'}, {en: 'can\'t', cn: '不能'}, {en: 'please', cn: '请'},
+                    {en: 'thank you', cn: '谢谢你'}, {en: 'excuse me', cn: '打扰一下'}, {en: 'sure', cn: '当然'}, {en: 'of course', cn: '当然'},
+                    {en: 'sorry', cn: '抱歉'}, {en: 'very much', cn: '非常'}, {en: 'really', cn: '真的'}, {en: 'home', cn: '家'},
+                    {en: 'street', cn: '街道'}, {en: 'village', cn: '村庄'}, {en: 'garden', cn: '花园'}, {en: 'night club', cn: '夜总会'},
+                    {en: 'supermarket', cn: '超市'}, {en: 'north', cn: '北'}, {en: 'south', cn: '南'}, {en: 'west', cn: '西'}, {en: 'east', cn: '东'},
+                    {en: 'alcohol', cn: '酒精'}, {en: 'mineral water', cn: '矿泉水'}, {en: 'artist', cn: '艺术家'}, {en: 'paint', cn: '画画(油漆)'},
+                    {en: 'picture', cn: '画'}, {en: 'hour', cn: '小时'}, {en: 'holiday', cn: '假期'}, {en: 'paid holidays', cn: '带薪假期'},
+                    {en: 'lonely', cn: '孤独的'}, {en: 'stressful', cn: '有压力的'}, {en: 'stress', cn: '压力'}, {en: 'now', cn: '现在'},
+                    {en: 'name', cn: '名字'}, {en: 'pen', cn: '钢笔'}, {en: 'know', cn: '知道'}, {en: 'expensive', cn: '昂贵的'}, {en: 'who', cn: '谁'},
+                    {en: 'that', cn: '那个'}, {en: 'Friday', cn: '周五'}, {en: 'why', cn: '为什么'}, {en: 'sick', cn: '生病的'}, {en: 'so', cn: '所以'},
+                    {en: 'often', cn: '经常'}, {en: 'parents', cn: '父母'}, {en: 'old', cn: '老的'}, {en: 'this morning', cn: '今天早上'},
+                    {en: 'after dinner', cn: '晚饭后'}, {en: 'not now', cn: '现在不行'}, {en: 'mom', cn: '妈妈'}, {en: 'alone', cn: '独自'},
+                    {en: 'wear', cn: '穿'}, {en: 'clothes', cn: '衣服'}, {en: 'fire', cn: '火'}, {en: 'clean', cn: '打扫'}, {en: 'ham', cn: '火腿'},
+                    {en: 'only', cn: '只是'}, {en: 'novel', cn: '小说'}, {en: 'partner', cn: '伙伴'}, {en: 'earn', cn: '赚'}, {en: 'relax', cn: '放松'},
+                    {en: 'just', cn: '刚刚/只是'}, {en: 'again', cn: '再一次'}, {en: 'it depends', cn: '看情况'}, {en: 'imagination', cn: '想象力'},
+                    {en: 'international', cn: '国际的'}, {en: 'airport', cn: '机场'}, {en: 'pub', cn: '酒吧'}, {en: 'inside', cn: '里面'},
+                    {en: 'outside', cn: '外面'}, {en: 'invite', cn: '邀请'}, {en: 'world', cn: '世界'}, {en: 'mountain', cn: '山'},
+                    {en: 'summer', cn: '夏天'}, {en: 'winter', cn: '冬天'}, {en: 'light', cn: '光/亮的'}, {en: 'dark', cn: '黑暗'},
+                    {en: 'closed', cn: '关闭的'}, {en: 'open', cn: '开放的'}, {en: 'year', cn: '年'}, {en: 'prefer', cn: '更喜欢'},
+                    {en: 'barbecue', cn: '烧烤'}, {en: 'forever', cn: '永远'}, {en: 'exercise', cn: '锻炼/运动'}, {en: 'degree', cn: '度'},
+                    {en: 'ski', cn: '滑雪'}, {en: 'weather', cn: '天气'}, {en: 'sun', cn: '太阳'}, {en: 'midnight', cn: '午夜'}
+                ],
+                fillBlank: [
+                    {q: 'I ___ drive a car.', a: 'can', hint: '表达能力用 can'}, {q: '___ you help me?', a: 'Can', hint: '请求帮助用 Can'},
+                    {q: '___ I sit here?', a: 'Can', hint: '请求许可用 Can'}, {q: 'No, you ___.', a: 'cannot', hint: '否定回答'}
+                ],
+                translate: [
+                    {cn: '你不可以在医院用手机。', en: 'You cannot use mobile phone in hospital.'},
+                    {cn: '你可以跟我一起去电影院吗？', en: 'Can you go to the cinema with me?'}, {cn: '我不确定。', en: 'I am not sure.'}
+                ]
+            },
+            lesson4: {
+                vocab: [
+                    {en: 'play / played / will play', cn: '玩/演奏'}, {en: 'study / studied / will study', cn: '学习'},
+                    {en: 'cook / cooked / will cook', cn: '烹饪'}, {en: 'watch / watched / will watch', cn: '观看'},
+                    {en: 'walk / walked / will walk', cn: '走路'}, {en: 'clean / cleaned / will clean', cn: '打扫'},
+                    {en: 'visit / visited / will visit', cn: '拜访'}, {en: 'travel / traveled / will travel', cn: '旅行'},
+                    {en: 'enjoy / enjoyed / will enjoy', cn: '享受'}, {en: 'finish / finished / will finish', cn: '完成'},
+                    {en: 'open / opened / will open', cn: '打开'}, {en: 'close / closed / will close', cn: '关闭'},
+                    {en: 'start / started / will start', cn: '开始'}, {en: 'stop / stopped / will stop', cn: '停止'},
+                    {en: 'rain / rained / will rain', cn: '下雨'}, {en: 'snow / snowed / will snow', cn: '下雪'},
+                    {en: 'need / needed / will need', cn: '需要'}, {en: 'want / wanted / will want', cn: '想要'},
+                    {en: 'love / loved / will love', cn: '爱'}, {en: 'hate / hated / will hate', cn: '讨厌'},
+                    {en: 'try / tried / will try', cn: '尝试'}, {en: 'carry / carried / will carry', cn: '携带'},
+                    {en: 'wash / washed / will wash', cn: '洗'}, {en: 'wait / waited / will wait', cn: '等待'},
+                    {en: 'go / went / will go', cn: '去'}, {en: 'eat / ate / will eat', cn: '吃'},
+                    {en: 'do / did / will do', cn: '做'}, {en: 'buy / bought / will buy', cn: '买'},
+                    {en: 'come / came / will come', cn: '来'}, {en: 'take / took / will take', cn: '拿/乘'},
+                    {en: 'see / saw / will see', cn: '看见'}, {en: 'get / got / will get', cn: '得到'},
+                    {en: 'make / made / will make', cn: '制作'}, {en: 'find / found / will find', cn: '找到'},
+                    {en: 'tell / told / will tell', cn: '告诉'}, {en: 'say / said / will say', cn: '说'},
+                    {en: 'give / gave / will give', cn: '给'}, {en: 'know / knew / will know', cn: '知道'},
+                    {en: 'think / thought / will think', cn: '想/认为'}, {en: 'read / read / will read', cn: '读'},
+                    {en: 'write / wrote / will write', cn: '写'}, {en: 'sing / sang / will sing', cn: '唱'},
+                    {en: 'swim / swam / will swim', cn: '游泳'}, {en: 'run / ran / will run', cn: '跑'},
+                    {en: 'fly / flew / will fly', cn: '飞'}, {en: 'drink / drank / will drink', cn: '喝'},
+                    {en: 'yesterday', cn: '昨天'}, {en: 'tomorrow', cn: '明天'},
+                    {en: 'last week', cn: '上周'}, {en: 'last month', cn: '上个月'},
+                    {en: 'last year', cn: '去年'}, {en: 'last night', cn: '昨晚'},
+                    {en: 'next week', cn: '下周'}, {en: 'next month', cn: '下个月'},
+                    {en: 'next year', cn: '明年'}, {en: 'ago', cn: '以前'},
+                    {en: 'later', cn: '稍后'}, {en: 'soon', cn: '很快'},
+                    {en: 'brush teeth', cn: '刷牙'}, {en: 'comb hair', cn: '梳头'},
+                    {en: 'get dressed', cn: '穿衣服'}, {en: 'have breakfast', cn: '吃早餐'},
+                    {en: 'do homework', cn: '做作业'}, {en: 'take a bath', cn: '洗澡'},
+                    {en: 'go to sleep', cn: '去睡觉'}, {en: 'wake up', cn: '醒来'},
+                    {en: 'get up', cn: '起床'}, {en: 'go to bed', cn: '上床睡觉'},
+                    {en: 'cake', cn: '蛋糕'}, {en: 'cookie', cn: '饼干'},
+                    {en: 'pie', cn: '馅饼'}, {en: 'ice cream', cn: '冰淇淋'},
+                    {en: 'pizza', cn: '披萨'}, {en: 'hamburger', cn: '汉堡包'},
+                    {en: 'noodle', cn: '面条'}, {en: 'dumpling', cn: '饺子'},
+                    {en: 'soup', cn: '汤'}, {en: 'butter', cn: '黄油'},
+                    {en: 'honey', cn: '蜂蜜'}, {en: 'jam', cn: '果酱'},
+                    {en: 'yogurt', cn: '酸奶'}, {en: 'orange juice', cn: '橙汁'},
+                    {en: 'coke', cn: '可乐'}, {en: 'lemonade', cn: '柠檬水'},
+                    {en: 'snack', cn: '零食'}, {en: 'kitchen', cn: '厨房'},
+                    {en: 'bathroom', cn: '浴室'}, {en: 'bedroom', cn: '卧室'},
+                    {en: 'living room', cn: '客厅'}, {en: 'balcony', cn: '阳台'},
+                    {en: 'garage', cn: '车库'}, {en: 'elevator', cn: '电梯'},
+                    {en: 'stairs', cn: '楼梯'}, {en: 'roof', cn: '屋顶'},
+                    {en: 'floor', cn: '地板'}, {en: 'wall', cn: '墙'},
+                    {en: 'zoo', cn: '动物园'}, {en: 'library', cn: '图书馆'},
+                    {en: 'post office', cn: '邮局'}, {en: 'bank', cn: '银行'},
+                    {en: 'station', cn: '车站'}, {en: 'theater', cn: '剧院'},
+                    {en: 'delicious', cn: '美味的'}, {en: 'terrible', cn: '糟糕的'},
+                    {en: 'wonderful', cn: '精彩的'}, {en: 'boring', cn: '无聊的'},
+                    {en: 'exciting', cn: '令人兴奋的'}, {en: 'surprised', cn: '惊讶的'},
+                    {en: 'afraid', cn: '害怕的'}, {en: 'worried', cn: '担心的'},
+                    {en: 'proud', cn: '骄傲的'}, {en: 'embarrassed', cn: '尴尬的'},
+                    {en: 'nervous', cn: '紧张的'}, {en: 'calm', cn: '平静的'},
+                    {en: 'friendly', cn: '友好的'}, {en: 'polite', cn: '礼貌的'},
+                    {en: 'rude', cn: '粗鲁的'}, {en: 'honest', cn: '诚实的'},
+                    {en: 'brave', cn: '勇敢的'}, {en: 'lazy', cn: '懒惰的'},
+                    {en: 'hard-working', cn: '勤奋的'}, {en: 'clever', cn: '聪明的'},
+                    {en: 'patient', cn: '耐心的'}, {en: 'impatient', cn: '不耐烦的'},
+                    {en: 'modern', cn: '现代的'}, {en: 'ancient', cn: '古老的'},
+                    {en: 'famous', cn: '著名的'}, {en: 'healthy', cn: '健康的'},
+                    {en: 'comfortable', cn: '舒适的'}, {en: 'maybe', cn: '也许'},
+                    {en: 'probably', cn: '大概'}, {en: 'suddenly', cn: '突然'},
+                    {en: 'finally', cn: '终于'}, {en: 'already', cn: '已经'},
+                    {en: 'still', cn: '仍然'}, {en: 'enough', cn: '足够的'},
+                    {en: 'too', cn: '也/太'}, {en: 'both', cn: '两者都'},
+                    {en: 'all', cn: '全部'}, {en: 'each', cn: '每个'},
+                    {en: 'another', cn: '另一个'}, {en: 'special', cn: '特别的'},
+                    {en: 'free', cn: '自由的/免费的'}, {en: 'ready', cn: '准备好的'},
+                    {en: 'slowly', cn: '慢慢地'}, {en: 'quickly', cn: '快速地'},
+                    {en: 'carefully', cn: '仔细地'}, {en: 'easily', cn: '容易地'},
+                    {en: 'happily', cn: '快乐地'}, {en: 'quietly', cn: '安静地'},
+                    {en: 'well', cn: '好地'}, {en: 'hard', cn: '努力地'},
+                    {en: 'together', cn: '一起'}, {en: 'alone', cn: '独自'}
+                ],
+                fillBlank: [
+                    {q: 'I ___ basketball every Saturday. (play)', a: 'play', hint: 'every Saturday 表示习惯，用现在式'},
+                    {q: 'She ___ hard for the exam last week. (study)', a: 'studied', hint: 'last week 是过去时间'},
+                    {q: 'They ___ visit their grandparents tomorrow. (will)', a: 'will', hint: 'tomorrow 是将来时间'},
+                    {q: 'He ___ to the cinema yesterday evening. (go)', a: 'went', hint: 'yesterday 用过去式'},
+                    {q: 'We ___ an exciting movie last Sunday. (watch)', a: 'watched', hint: 'last Sunday 用过去式'},
+                    {q: 'I ___ my keys yesterday, but I ___ them later. (lose, find)', a: 'lost, found', hint: 'yesterday 用过去式'},
+                    {q: 'The teacher ___ us an interesting story yesterday. (tell)', a: 'told', hint: 'tell 的过去式是 told'},
+                    {q: 'My family ___ to Japan two years ago. (travel)', a: 'traveled', hint: 'two years ago 用过去式'}
+                ],
+                translate: [
+                    {cn: '我每天早上七点起床。', en: 'I get up at seven o\'clock every morning.'},
+                    {cn: '她昨晚做了一顿美味的晚餐。', en: 'She cooked a delicious dinner last night.'},
+                    {cn: '我们下个月要去山里旅行。', en: 'We will take a trip to the mountains next month.'},
+                    {cn: '他去年冬天去滑雪时摔断了腿。', en: 'He broke his leg when he went skiing last winter.'},
+                    {cn: '老师给我们讲了一个有趣的故事。', en: 'The teacher told us an interesting story.'},
+                    {cn: '我希望我们明年能再去那里。', en: 'I hope we will go there again next year.'}
+                ]
+            },
+            lesson5: {
+                vocab: [
+                    {en: 'passport', cn: '护照'}, {en: 'visa', cn: '签证'},
+                    {en: 'ticket', cn: '票'}, {en: 'boarding pass', cn: '登机牌'},
+                    {en: 'luggage', cn: '行李'}, {en: 'suitcase', cn: '手提箱'},
+                    {en: 'backpack', cn: '背包'}, {en: 'journey', cn: '旅程'},
+                    {en: 'trip', cn: '旅行'}, {en: 'tour', cn: '观光'},
+                    {en: 'guidebook', cn: '旅游指南'}, {en: 'map', cn: '地图'},
+                    {en: 'reservation', cn: '预订'}, {en: 'reception', cn: '前台'},
+                    {en: 'check in', cn: '办理入住'}, {en: 'check out', cn: '办理退房'},
+                    {en: 'flight', cn: '航班'}, {en: 'departure', cn: '出发'},
+                    {en: 'arrival', cn: '到达'}, {en: 'delay', cn: '延误'},
+                    {en: 'cancel', cn: '取消'}, {en: 'souvenir', cn: '纪念品'},
+                    {en: 'landmark', cn: '地标'}, {en: 'scenery', cn: '风景'},
+                    {en: 'passenger', cn: '乘客'}, {en: 'relative', cn: '亲戚'},
+                    {en: 'neighbor', cn: '邻居'}, {en: 'guest', cn: '客人'},
+                    {en: 'host', cn: '主人'}, {en: 'furniture', cn: '家具'},
+                    {en: 'sofa', cn: '沙发'}, {en: 'cupboard', cn: '橱柜'},
+                    {en: 'mirror', cn: '镜子'}, {en: 'carpet', cn: '地毯'},
+                    {en: 'curtain', cn: '窗帘'}, {en: 'pillow', cn: '枕头'},
+                    {en: 'blanket', cn: '毯子'}, {en: 'sheet', cn: '床单'},
+                    {en: 'towel', cn: '毛巾'}, {en: 'soap', cn: '肥皂'},
+                    {en: 'shampoo', cn: '洗发水'}, {en: 'toothpaste', cn: '牙膏'},
+                    {en: 'toothbrush', cn: '牙刷'}, {en: 'comb', cn: '梳子'},
+                    {en: 'clock', cn: '时钟'}, {en: 'calendar', cn: '日历'},
+                    {en: 'key', cn: '钥匙'}, {en: 'lock', cn: '锁'},
+                    {en: 'fan', cn: '风扇'}, {en: 'air conditioner', cn: '空调'},
+                    {en: 'heater', cn: '暖气'}, {en: 'refrigerator', cn: '冰箱'},
+                    {en: 'microwave', cn: '微波炉'}, {en: 'oven', cn: '烤箱'},
+                    {en: 'stove', cn: '炉灶'}, {en: 'kettle', cn: '水壶'},
+                    {en: 'plate', cn: '盘子'}, {en: 'bowl', cn: '碗'},
+                    {en: 'cup', cn: '杯子'}, {en: 'glass', cn: '玻璃杯'},
+                    {en: 'fork', cn: '叉子'}, {en: 'knife', cn: '刀'},
+                    {en: 'spoon', cn: '勺子'}, {en: 'chopsticks', cn: '筷子'},
+                    {en: 'subject', cn: '科目'}, {en: 'mathematics', cn: '数学'},
+                    {en: 'physics', cn: '物理'}, {en: 'chemistry', cn: '化学'},
+                    {en: 'biology', cn: '生物'}, {en: 'geography', cn: '地理'},
+                    {en: 'politics', cn: '政治'}, {en: 'literature', cn: '文学'},
+                    {en: 'art', cn: '美术'}, {en: 'music', cn: '音乐'},
+                    {en: 'physical education', cn: '体育'}, {en: 'exam', cn: '考试'},
+                    {en: 'test', cn: '测验'}, {en: 'quiz', cn: '小测验'},
+                    {en: 'homework', cn: '家庭作业'}, {en: 'project', cn: '项目'},
+                    {en: 'presentation', cn: '演讲'}, {en: 'scholarship', cn: '奖学金'},
+                    {en: 'professor', cn: '教授'}, {en: 'principal', cn: '校长'},
+                    {en: 'classmate', cn: '同学'}, {en: 'textbook', cn: '课本'},
+                    {en: 'notebook', cn: '笔记本'}, {en: 'dictionary', cn: '字典'},
+                    {en: 'eraser', cn: '橡皮'}, {en: 'ruler', cn: '尺子'},
+                    {en: 'scissors', cn: '剪刀'}, {en: 'glue', cn: '胶水'},
+                    {en: 'interview', cn: '面试'}, {en: 'resume', cn: '简历'},
+                    {en: 'salary', cn: '薪水'}, {en: 'bonus', cn: '奖金'},
+                    {en: 'promotion', cn: '晋升'}, {en: 'quit', cn: '辞职'},
+                    {en: 'retire', cn: '退休'}, {en: 'meeting', cn: '会议'},
+                    {en: 'deadline', cn: '截止日期'}, {en: 'report', cn: '报告'},
+                    {en: 'document', cn: '文件'}, {en: 'contract', cn: '合同'},
+                    {en: 'client', cn: '客户'}, {en: 'customer', cn: '顾客'},
+                    {en: 'forest', cn: '森林'}, {en: 'desert', cn: '沙漠'},
+                    {en: 'ocean', cn: '海洋'}, {en: 'river', cn: '河流'},
+                    {en: 'lake', cn: '湖泊'}, {en: 'stream', cn: '小溪'},
+                    {en: 'waterfall', cn: '瀑布'}, {en: 'island', cn: '岛屿'},
+                    {en: 'coast', cn: '海岸'}, {en: 'beach', cn: '海滩'},
+                    {en: 'wave', cn: '波浪'}, {en: 'sand', cn: '沙子'},
+                    {en: 'stone', cn: '石头'}, {en: 'rock', cn: '岩石'},
+                    {en: 'cave', cn: '洞穴'}, {en: 'valley', cn: '山谷'},
+                    {en: 'hill', cn: '小山'}, {en: 'volcano', cn: '火山'},
+                    {en: 'earthquake', cn: '地震'}, {en: 'flood', cn: '洪水'},
+                    {en: 'storm', cn: '暴风雨'}, {en: 'thunder', cn: '雷'},
+                    {en: 'lightning', cn: '闪电'}, {en: 'rainbow', cn: '彩虹'},
+                    {en: 'cloud', cn: '云'}, {en: 'fog', cn: '雾'},
+                    {en: 'wind', cn: '风'}, {en: 'snowflake', cn: '雪花'},
+                    {en: 'planet', cn: '行星'}, {en: 'star', cn: '星星'},
+                    {en: 'moon', cn: '月亮'}, {en: 'environment', cn: '环境'},
+                    {en: 'pollution', cn: '污染'}, {en: 'recycle', cn: '回收'},
+                    {en: 'protect', cn: '保护'}, {en: 'basketball', cn: '篮球'},
+                    {en: 'volleyball', cn: '排球'}, {en: 'baseball', cn: '棒球'},
+                    {en: 'badminton', cn: '羽毛球'}, {en: 'table tennis', cn: '乒乓球'},
+                    {en: 'golf', cn: '高尔夫球'}, {en: 'boxing', cn: '拳击'},
+                    {en: 'gymnastics', cn: '体操'}, {en: 'athletics', cn: '田径'},
+                    {en: 'marathon', cn: '马拉松'}, {en: 'surfing', cn: '冲浪'},
+                    {en: 'diving', cn: '潜水'}, {en: 'skating', cn: '滑冰'},
+                    {en: 'skiing', cn: '滑雪'}, {en: 'cycling', cn: '骑自行车'},
+                    {en: 'hiking', cn: '徒步'}, {en: 'camping', cn: '露营'},
+                    {en: 'fishing', cn: '钓鱼'}, {en: 'yoga', cn: '瑜伽'},
+                    {en: 'jogging', cn: '慢跑'}, {en: 'muscle', cn: '肌肉'},
+                    {en: 'strength', cn: '力量'}, {en: 'energy', cn: '能量'},
+                    {en: 'team', cn: '队伍'}, {en: 'captain', cn: '队长'},
+                    {en: 'coach', cn: '教练'}, {en: 'referee', cn: '裁判'},
+                    {en: 'audience', cn: '观众'}, {en: 'champion', cn: '冠军'},
+                    {en: 'medal', cn: '奖牌'}, {en: 'record', cn: '纪录'},
+                    {en: 'court', cn: '球场'}, {en: 'track', cn: '跑道'},
+                    {en: 'equipment', cn: '装备'}, {en: 'uniform', cn: '制服'},
+                    {en: 'delighted', cn: '高兴的'}, {en: 'thrilled', cn: '激动的'},
+                    {en: 'cheerful', cn: '愉快的'}, {en: 'grateful', cn: '感激的'},
+                    {en: 'relieved', cn: '放心的'}, {en: 'satisfied', cn: '满意的'},
+                    {en: 'confident', cn: '自信的'}, {en: 'enthusiastic', cn: '热情的'},
+                    {en: 'optimistic', cn: '乐观的'}, {en: 'disappointed', cn: '失望的'},
+                    {en: 'frustrated', cn: '沮丧的'}, {en: 'annoyed', cn: '恼怒的'},
+                    {en: 'jealous', cn: '嫉妒的'}, {en: 'ashamed', cn: '羞愧的'},
+                    {en: 'guilty', cn: '内疚的'}, {en: 'confused', cn: '困惑的'},
+                    {en: 'curious', cn: '好奇的'}, {en: 'bored', cn: '无聊的'},
+                    {en: 'exhausted', cn: '精疲力竭的'}, {en: 'homesick', cn: '想家的'},
+                    {en: 'heartbroken', cn: '心碎的'}, {en: 'lonely', cn: '孤独的'},
+                    {en: 'hopeful', cn: '充满希望的'}, {en: 'determined', cn: '坚定的'},
+                    {en: 'ability', cn: '能力'}, {en: 'advantage', cn: '优势'},
+                    {en: 'experience', cn: '经验'}, {en: 'knowledge', cn: '知识'},
+                    {en: 'skill', cn: '技能'}, {en: 'talent', cn: '天赋'},
+                    {en: 'effort', cn: '努力'}, {en: 'courage', cn: '勇气'},
+                    {en: 'patience', cn: '耐心'}, {en: 'responsibility', cn: '责任'},
+                    {en: 'opportunity', cn: '机会'}, {en: 'challenge', cn: '挑战'},
+                    {en: 'solution', cn: '解决方案'}, {en: 'decision', cn: '决定'},
+                    {en: 'choice', cn: '选择'}, {en: 'mistake', cn: '错误'},
+                    {en: 'success', cn: '成功'}, {en: 'failure', cn: '失败'},
+                    {en: 'goal', cn: '目标'}, {en: 'dream', cn: '梦想'},
+                    {en: 'plan', cn: '计划'}, {en: 'schedule', cn: '时间表'},
+                    {en: 'habit', cn: '习惯'}, {en: 'tradition', cn: '传统'},
+                    {en: 'culture', cn: '文化'}, {en: 'festival', cn: '节日'},
+                    {en: 'celebration', cn: '庆祝'}, {en: 'performance', cn: '表演'},
+                    {en: 'competition', cn: '比赛'}, {en: 'conversation', cn: '对话'},
+                    {en: 'discussion', cn: '讨论'}, {en: 'promise', cn: '承诺'},
+                    {en: 'apology', cn: '道歉'}, {en: 'invitation', cn: '邀请'},
+                    {en: 'advice', cn: '建议'}, {en: 'opinion', cn: '观点'},
+                    {en: 'attitude', cn: '态度'}, {en: 'behavior', cn: '行为'},
+                    {en: 'appearance', cn: '外表'}, {en: 'character', cn: '性格'}
+                ],
+                fillBlank: [
+                    {q: 'I ___ (go) to the beach with my friends last Sunday.', a: 'went', hint: 'last Sunday 用过去式'},
+                    {q: 'She ___ (not/finish) her homework yesterday.', a: 'did not finish', hint: '过去式否定用 did not + 动词原形'},
+                    {q: '___ you ___ (watch) the football match last night?', a: 'Did, watch', hint: '过去式疑问句用 Did + 主语 + 动词原形'},
+                    {q: 'We ___ (be going to) have a barbecue next weekend.', a: 'are going to', hint: 'be going to 表计划'},
+                    {q: 'He ___ (be going to) buy a new car next month.', a: 'is going to', hint: 'He 配 is'},
+                    {q: '___ they ___ (be going to) visit Paris next summer?', a: 'Are, going to', hint: 'be going to 的疑问句'},
+                    {q: 'The teacher ___ (tell) us an interesting story yesterday.', a: 'told', hint: 'tell 的过去式是 told'},
+                    {q: 'They ___ (choose) to stay at home because of the storm.', a: 'chose', hint: 'choose 的过去式是 chose'}
+                ],
+                translate: [
+                    {cn: '你昨晚看足球比赛了吗？', en: 'Did you watch the football match last night?'},
+                    {cn: '我打算明年夏天去欧洲旅行。', en: 'I am going to travel to Europe next summer.'},
+                    {cn: '她昨晚上没有完成作业。', en: 'She did not finish her homework yesterday.'},
+                    {cn: '我们要继续努力工作。', en: 'We are going to keep working hard.'},
+                    {cn: '你打算什么时候辞职？', en: 'When are you going to quit your job?'},
+                    {cn: '去年夏天我和一群同学去了非洲。', en: 'Last summer, I went to Africa with a group of classmates.'},
+                    {cn: '我相信这将是一次有意义且难忘的经历。', en: 'I believe it will be a meaningful and unforgettable experience.'}
+                ]
+            }
+        };
+
+        let currentMode = '';
+        let dictationMode = 'cn2en';
+        let currentQuestions = [], currentIndex = 0, wrongAttempts = 0, score = 0;
+
+        function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+        // 设置练习模式
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + mode).classList.add('active');
+            
+            // 开始对应练习
+            if (mode === 'dictation') {
+                showDictationStart();
+            } else if (mode === 'fillblank') {
+                startFillBlank();
+            } else if (mode === 'translate') {
+                startTranslate();
+            }
+        }
+
+        // 单词默写 - 选择模式
+        function showDictationStart() {
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="mode-toggle">' +
+                '<button class="active" onclick="setDictationMode(' + "'cn2en'" + ')">中译英</button>' +
+                '<button onclick="setDictationMode(' + "'en2cn'" + ')">英译中</button>' +
+                '</div>' +
+                '<div style="text-align:center;padding:30px 20px;">' +
+                '<h3>单词默写</h3>' +
+                '<p style="color:#666;margin:15px 0;">选择模式后开始练习</p>' +
+                '</div>';
+            setTimeout(startDictation, 100);
+        }
+
+        function setDictationMode(mode) {
+            dictationMode = mode;
+            document.querySelectorAll('.mode-toggle button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            startDictation();
+        }
+
+        function startDictation() {
+            const allVocab = [
+                ...allData.lesson1.vocab.map(v => ({...v, lesson: 1})),
+                ...allData.lesson2.vocab.map(v => ({...v, lesson: 2})),
+                ...allData.lesson3.vocab.map(v => ({...v, lesson: 3})),
+                ...allData.lesson4.vocab.map(v => ({...v, lesson: 4})),
+                ...allData.lesson5.vocab.map(v => ({...v, lesson: 5}))
+            ];
+            currentQuestions = shuffle(allVocab).slice(0, 10);
+            currentIndex = 0; score = 0;
+            showDictationQuestion();
+        }
+
+        function showDictationQuestion() {
+            if (currentIndex >= currentQuestions.length) { 
+                showCompletion(score, currentQuestions.length); 
+                return; 
+            }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            const prompt = dictationMode === 'cn2en' ? q.cn : q.en;
+            const answer = dictationMode === 'cn2en' ? q.en : q.cn;
+            
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">' + (dictationMode === 'cn2en' ? '请输入英文：' : '请输入中文：') + '<br><br><strong>' + prompt + '</strong><span class="lesson-tag">L' + q.lesson + '</span>' +
+                (dictationMode === 'cn2en' ? '<button class="quiz-btn" onclick="speak(' + "'" + answer.replace(/'/g, "\\'") + "'" + ')" style="margin-left:10px;">🔊 朗读</button>' : '') + '</div>' +
+                '<input type="text" class="quiz-input" id="answer-input" placeholder="请输入答案">' +
+                '<br><button class="quiz-btn" onclick="checkDictationAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            
+            document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkDictationAnswer(); };
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+
+        function checkDictationAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
+            const q = currentQuestions[currentIndex];
+            const correctAnswer = dictationMode === 'cn2en' ? q.en : q.cn;
+            const userAnswer = input.value.trim();
+            if (!userAnswer) return;
+            
+            if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+                score++;
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct'; feedback.textContent = '✅ 回答正确！';
+                setTimeout(() => { currentIndex++; showDictationQuestion(); }, 1200);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '❌ 回答错误（第' + wrongAttempts + '次尝试）';
+                input.value = ''; input.focus();
+                const questionText = dictationMode === 'cn2en' ? q.cn : q.en; WrongAnswersManager.save({type: 'dictation', q: questionText, a: correctAnswer, lesson: 'L' + q.lesson}, q.lesson);
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + correctAnswer.replace(/'/g, "\\'") + "'" + ')">💡 显示答案</button>';
+            }
+        }
+
+        function startFillBlank() {
+            const allQ = [
+                ...allData.lesson1.fillBlank.map(q => ({...q, lesson: 1})),
+                ...allData.lesson2.fillBlank.map(q => ({...q, lesson: 2})),
+                ...allData.lesson3.fillBlank.map(q => ({...q, lesson: 3})),
+                ...allData.lesson4.fillBlank.map(q => ({...q, lesson: 4})),
+                ...allData.lesson5.fillBlank.map(q => ({...q, lesson: 5}))
+            ];
+            currentQuestions = shuffle(allQ).slice(0, 10);
+            currentIndex = 0; score = 0;
+            showFillBlankQuestion();
+        }
+
+        function showFillBlankQuestion() {
+            if (currentIndex >= currentQuestions.length) { 
+                showCompletion(score, currentQuestions.length); 
+                return; 
+            }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">' + q.q.replace('___', '_____') + '<span class="lesson-tag">L' + q.lesson + '</span></div>' +
+                '<div class="hint-text" id="hint-text">💡 提示：' + q.hint + '</div>' +
+                '<input type="text" class="quiz-input" id="answer-input" placeholder="填入正确答案">' +
+                '<br><button class="quiz-btn" onclick="checkFillBlankAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            
+            document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkFillBlankAnswer(); };
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+
+        function checkFillBlankAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback'), hintText = document.getElementById('hint-text');
+            const q = currentQuestions[currentIndex];
+            const userAnswer = input.value.trim().toLowerCase();
+            if (!userAnswer) return;
+            
+            const isCorrect = userAnswer === q.a.toLowerCase() || (q.a === 'cannot' && (userAnswer === "can't" || userAnswer === 'can not'));
+            if (isCorrect) {
+                score++;
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct'; feedback.textContent = '✅ 回答正确！';
+                setTimeout(() => { currentIndex++; showFillBlankQuestion(); }, 1200);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '❌ 回答错误（第' + wrongAttempts + '次尝试）';
+                hintText.classList.add('show');
+                input.value = ''; input.focus();
+                WrongAnswersManager.save({type: 'fillblank', q: q.q, a: q.a, hint: q.hint, lesson: 'L' + q.lesson}, q.lesson);
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showFillBlankAnswer()">💡 显示答案</button>';
+            }
+        }
+
+        function showFillBlankAnswer() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">正确答案：' + q.a + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showFillBlankQuestion(); }, 5000);
+        }
+
+        function startTranslate() {
+            const allQ = [
+                ...allData.lesson1.translate.map(q => ({...q, lesson: 1})),
+                ...allData.lesson2.translate.map(q => ({...q, lesson: 2})),
+                ...allData.lesson3.translate.map(q => ({...q, lesson: 3})),
+                ...allData.lesson4.translate.map(q => ({...q, lesson: 4})),
+                ...allData.lesson5.translate.map(q => ({...q, lesson: 5}))
+            ];
+            currentQuestions = shuffle(allQ).slice(0, 10);
+            currentIndex = 0; score = 0;
+            showTranslateQuestion();
+        }
+
+        function showTranslateQuestion() {
+            if (currentIndex >= currentQuestions.length) { 
+                showCompletion(score, currentQuestions.length); 
+                return; 
+            }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">请将以下中文翻译成英文：<br><br><strong>"' + q.cn + '"</strong><span class="lesson-tag">L' + q.lesson + '</span></div>' +
+                '<textarea class="quiz-input" id="answer-input" rows="3" placeholder="请输入英文翻译"></textarea>' +
+                '<br><button class="quiz-btn" onclick="checkTranslateAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+
+        function checkTranslateAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
+            const q = currentQuestions[currentIndex];
+            const userAnswer = input.value.trim().toLowerCase().replace(/[^a-z\\s]/g, '');
+            const correctAnswer = q.en.toLowerCase().replace(/[^a-z\\s]/g, '');
+            if (!userAnswer) return;
+            
+            if (userAnswer === correctAnswer) {
+                score++;
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct'; feedback.textContent = '✅ 回答正确！';
+                setTimeout(() => { currentIndex++; showTranslateQuestion(); }, 1200);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '❌ 回答错误（第' + wrongAttempts + '次尝试）';
+                WrongAnswersManager.save({type: 'translate', cn: q.cn, en: q.en, lesson: 'L' + q.lesson}, q.lesson);
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showTranslateAnswer()">💡 显示答案</button>';
+            }
+        }
+
+        function showTranslateAnswer() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">参考答案：' + q.en + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showTranslateQuestion(); }, 5000);
+        }
+
+        function showAnswer(answer) {
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">正确答案：' + answer + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { 
+                currentIndex++; 
+                if (currentMode === 'dictation') showDictationQuestion();
+            }, 5000);
+        }
+
+        function showCompletion(score, total) {
+            const percentage = Math.round(score / total * 100);
+            let stars = '⭐';
+            if (percentage >= 60) stars = '⭐⭐';
+            if (percentage >= 80) stars = '⭐⭐⭐';
+            if (percentage === 100) stars = '🏆⭐⭐⭐🏆';
+            document.getElementById('quiz-area').innerHTML = 
+                '<div class="completion-message">' +
+                '<h2>🎉 练习完成！</h2>' +
+                '<div class="stars">' + stars + '</div>' +
+                '<p style="font-size:1.3em;">得分：' + score + ' / ' + total + ' (' + percentage + '%)</p>' +
+                '<button class="quiz-btn" onclick="location.reload()">再来一次</button>' +
+                '</div>';
+        }
+    </script>
+</body>
+</html>

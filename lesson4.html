@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 4 - 现在式 / 过去式 / 未来式</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #f5f7fa; 
+            min-height: 100vh; 
+            padding: 10px; 
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 16px; 
+            padding: 20px 15px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1); 
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 2px solid #eee; 
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        h1 { 
+            color: #333; 
+            font-size: clamp(1.2rem, 4.5vw, 1.8rem); 
+        }
+        .back-btn { 
+            background: #667eea; 
+            color: white; 
+            padding: 12px 24px; 
+            border-radius: 10px; 
+            text-decoration: none; 
+            font-size: 1rem;
+            display: inline-block;
+        }
+        .tabs { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+            overflow-x: auto; 
+            padding-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tabs::-webkit-scrollbar { height: 4px; }
+        .tabs::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+        .tab { 
+            padding: 12px 20px; 
+            background: #f0f0f0; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 1rem; 
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .tab.active { background: #667eea; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .grammar-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 15px 0; 
+            font-size: clamp(0.85rem, 3vw, 1rem);
+        }
+        .grammar-table th, .grammar-table td { 
+            border: 1px solid #ddd; 
+            padding: 12px 10px; 
+            text-align: left; 
+        }
+        .grammar-table th { background: #667eea; color: white; }
+        .vocab-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px; 
+            margin: 15px 0; 
+        }
+        @media (min-width: 600px) { 
+            .vocab-grid { grid-template-columns: repeat(3, 1fr); } 
+        }
+        @media (min-width: 900px) { 
+            .vocab-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } 
+        }
+        .vocab-card { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 15px 12px; 
+            border-radius: 12px; 
+            text-align: center; 
+            position: relative; 
+            font-size: clamp(0.85rem, 3vw, 1rem);
+        }
+        .vocab-card .en { 
+            font-size: clamp(1rem, 3.5vw, 1.15em); 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+        }
+        .vocab-card .speaker-btn { 
+            position: absolute; 
+            top: 8px; 
+            right: 8px; 
+            background: rgba(255,255,255,0.3); 
+            border: none; 
+            color: white; 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .vocab-card .speaker-btn:active { background: rgba(255,255,255,0.5); }
+        .reading-item { 
+            background: #f8f9fa; 
+            padding: 15px 50px 15px 15px; 
+            border-radius: 12px; 
+            margin: 12px 0; 
+            border-left: 4px solid #667eea; 
+            position: relative; 
+            font-size: clamp(0.9rem, 3.2vw, 1.05rem);
+            line-height: 1.5;
+        }
+        .reading-item .speaker-btn { 
+            position: absolute; 
+            right: 10px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            background: #667eea; 
+            border: none; 
+            color: white; 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .reading-item .speaker-btn:active { background: #5a6fd6; }
+        .quiz-container { 
+            background: #f8f9fa; 
+            padding: 25px 15px; 
+            border-radius: 16px; 
+            text-align: center; 
+            min-height: 280px; 
+        }
+        .quiz-progress { 
+            margin-bottom: 15px; 
+            color: #667eea; 
+            font-size: clamp(1rem, 3.5vw, 1.15em); 
+        }
+        .quiz-question { 
+            font-size: clamp(1.1rem, 4vw, 1.5em); 
+            margin: 20px 0; 
+            color: #333; 
+            line-height: 1.5;
+        }
+        .quiz-input { 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 15px; 
+            border: 2px solid #ddd; 
+            border-radius: 12px; 
+            font-size: 1.1rem; 
+            text-align: center; 
+            margin: 15px 0; 
+        }
+        .quiz-input.correct { border-color: #28a745; background: #d4edda; }
+        .quiz-input.wrong { border-color: #dc3545; background: #f8d7da; }
+        .quiz-btn { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 14px 35px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 1.05rem; 
+            margin: 10px; 
+            min-width: 120px;
+        }
+        .quiz-btn:active { background: #5a6fd6; }
+        .quiz-btn.hint-btn { background: #ffc107; color: #333; }
+        .quiz-btn.hint-btn:active { background: #e5ac00; }
+        .quiz-feedback { 
+            margin-top: 15px; 
+            padding: 15px; 
+            border-radius: 12px; 
+            font-size: 1.05em; 
+            display: none; 
+        }
+        .quiz-feedback.show { display: block; }
+        .quiz-feedback.correct { background: #d4edda; color: #155724; }
+        .quiz-feedback.wrong { background: #f8d7da; color: #721c24; }
+        .mode-toggle { margin-bottom: 20px; }
+        .mode-toggle button { 
+            padding: 12px 24px; 
+            margin: 0 5px; 
+            border: 2px solid #667eea; 
+            background: white; 
+            color: #667eea; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 1rem;
+        }
+        .mode-toggle button.active { background: #667eea; color: white; }
+        .completion-message { text-align: center; padding: 30px 15px; }
+        .completion-message h2 { color: #28a745; margin-bottom: 15px; font-size: clamp(1.3rem, 5vw, 1.8rem); }
+        .stars { font-size: clamp(2rem, 8vw, 3em); margin: 15px 0; }
+        .answer-display { 
+            font-size: clamp(1.1rem, 4vw, 1.3em); 
+            color: #667eea; 
+            font-weight: bold; 
+            margin: 15px 0; 
+            padding: 15px; 
+            background: #e7e9ff; 
+            border-radius: 10px; 
+        }
+        .hint-text { color: #888; font-size: 0.95em; margin: 10px 0; display: none; }
+        .hint-text.show { display: block; }
+        .example-box { 
+            background: #e8f4f8; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 12px 0; 
+            font-size: clamp(0.9rem, 3.2vw, 1.05rem);
+            line-height: 1.5;
+        }
+        h2 { 
+            color: #667eea; 
+            margin: 25px 0 12px 0; 
+            padding-bottom: 8px; 
+            border-bottom: 2px solid #eee; 
+            font-size: clamp(1.1rem, 4vw, 1.4rem);
+        }
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { padding: 40px; border-radius: 20px; }
+            .header { margin-bottom: 30px; padding-bottom: 20px; }
+            .tabs { margin-bottom: 30px; flex-wrap: wrap; }
+            .quiz-container { padding: 40px; }
+            .quiz-question { margin: 30px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Lesson 4</h1>
+            <a href="index.html" class="back-btn">← 返回</a>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('grammar')">📖 语法</button>
+            <button class="tab" onclick="showTab('vocab')">📝 词汇</button>
+            <button class="tab" onclick="showTab('reading')">📄 阅读</button>
+            <button class="tab" onclick="showTab('dictation')">✍️ 默写</button>
+            <button class="tab" onclick="showTab('fillblank')">🔤 填空</button>
+            <button class="tab" onclick="showTab('translate')">🌐 翻译</button>
+        </div>
+        <div id="grammar" class="tab-content active">
+            <h2>1. 规则动词三态变化</h2>
+            <table class="grammar-table">
+                <tr><th>现在式</th><th>过去式</th><th>未来式</th><th>例句</th></tr>
+                <tr><td>play</td><td>played</td><td>will play</td><td>I play tennis every Sunday.</td></tr>
+                <tr><td>study</td><td>studied</td><td>will study</td><td>She studied English last night.</td></tr>
+                <tr><td>cook</td><td>cooked</td><td>will cook</td><td>He will cook dinner tomorrow.</td></tr>
+                <tr><td>watch</td><td>watched</td><td>will watch</td><td>We watched a movie yesterday.</td></tr>
+            </table>
+            <h2>2. 不规则动词三态变化</h2>
+            <table class="grammar-table">
+                <tr><th>现在式</th><th>过去式</th><th>未来式</th><th>例句</th></tr>
+                <tr><td>go</td><td>went</td><td>will go</td><td>I go to school by bus.</td></tr>
+                <tr><td>eat</td><td>ate</td><td>will eat</td><td>They ate sushi last week.</td></tr>
+                <tr><td>do</td><td>did</td><td>will do</td><td>She will do her homework tonight.</td></tr>
+                <tr><td>buy</td><td>bought</td><td>will buy</td><td>He bought a new phone yesterday.</td></tr>
+                <tr><td>come</td><td>came</td><td>will come</td><td>My friend came to visit me.</td></tr>
+                <tr><td>take</td><td>took</td><td>will take</td><td>I took a taxi to the airport.</td></tr>
+            </table>
+            <h2>3. 各时态基本句型</h2>
+            <div class="example-box">
+                <strong>现在式：</strong>I / You / We / They + 动词原形 &nbsp;|&nbsp; He / She / It + 动词 + s/es<br>
+                <strong>过去式：</strong>所有人称 + 动词过去式<br>
+                <strong>未来式：</strong>所有人称 + will + 动词原形
+            </div>
+        </div>
+        <div id="vocab" class="tab-content">
+            <h2>新动词 (New Verbs)</h2>
+            <div class="vocab-grid" id="vocab-verbs"></div>
+            <h2>时间状语 (Time Words)</h2>
+            <div class="vocab-grid" id="vocab-time"></div>
+            <h2>日常活动 (Daily Activities)</h2>
+            <div class="vocab-grid" id="vocab-daily"></div>
+            <h2>食物与饮品 (Food & Drinks)</h2>
+            <div class="vocab-grid" id="vocab-food"></div>
+            <h2>地点 (Places)</h2>
+            <div class="vocab-grid" id="vocab-places"></div>
+            <h2>形容词 (Adjectives)</h2>
+            <div class="vocab-grid" id="vocab-adj"></div>
+            <h2>其他 (Others)</h2>
+            <div class="vocab-grid" id="vocab-others"></div>
+        </div>
+        <div id="reading" class="tab-content">
+            <h2>阅读句子</h2>
+            <div id="reading-sentences"></div>
+            <h2>短文阅读</h2>
+            <div id="reading-passage"></div>
+        </div>
+        <div id="dictation" class="tab-content">
+            <div class="mode-toggle">
+                <button class="active" onclick="setDictationMode('cn2en')">中译英</button>
+                <button onclick="setDictationMode('en2cn')">英译中</button>
+            </div>
+            <div class="quiz-container" id="dictation-quiz">
+                <div class="completion-message"><h2>🎯 单词默写</h2><p style="color:#666;margin:20px 0;">选择上方模式开始练习</p></div>
+            </div>
+        </div>
+        <div id="fillblank" class="tab-content">
+            <div class="quiz-container" id="fillblank-quiz">
+                <div class="completion-message"><h2>📝 填空练习</h2><button class="quiz-btn" onclick="startFillBlank()">开始练习</button></div>
+            </div>
+        </div>
+        <div id="translate" class="tab-content">
+            <div class="quiz-container" id="translate-quiz">
+                <div class="completion-message"><h2>🌐 翻译练习</h2><button class="quiz-btn" onclick="startTranslate()">开始练习</button></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const WrongAnswersManager = {
+            STORAGE_KEY: 'english_learning_wrong_answers_l4',
+            getAll() { const data = localStorage.getItem(this.STORAGE_KEY); return data ? JSON.parse(data) : {}; },
+            save(wrongItem) {
+                const key = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
+                const all = this.getAll();
+                if (!all[key]) { all[key] = { ...wrongItem, correctCount: 0, lastWrong: Date.now() }; }
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(all));
+            },
+            recordCorrect(wrongItem) {
+                const key = JSON.stringify({q: wrongItem.q || wrongItem.cn || wrongItem.en, type: wrongItem.type});
+                const all = this.getAll();
+                if (all[key]) { all[key].correctCount++; if (all[key].correctCount >= 5) { delete all[key]; } localStorage.setItem(this.STORAGE_KEY, JSON.stringify(all)); }
+            }
+        };
+
+        const lessonData = {
+            verbs: [
+                {en: 'play / played / will play', cn: '玩/演奏'}, {en: 'study / studied / will study', cn: '学习'},
+                {en: 'cook / cooked / will cook', cn: '烹饪'}, {en: 'watch / watched / will watch', cn: '观看'},
+                {en: 'walk / walked / will walk', cn: '走路'}, {en: 'clean / cleaned / will clean', cn: '打扫'},
+                {en: 'visit / visited / will visit', cn: '拜访'}, {en: 'travel / traveled / will travel', cn: '旅行'},
+                {en: 'enjoy / enjoyed / will enjoy', cn: '享受'}, {en: 'finish / finished / will finish', cn: '完成'},
+                {en: 'open / opened / will open', cn: '打开'}, {en: 'close / closed / will close', cn: '关闭'},
+                {en: 'start / started / will start', cn: '开始'}, {en: 'stop / stopped / will stop', cn: '停止'},
+                {en: 'rain / rained / will rain', cn: '下雨'}, {en: 'snow / snowed / will snow', cn: '下雪'},
+                {en: 'need / needed / will need', cn: '需要'}, {en: 'want / wanted / will want', cn: '想要'},
+                {en: 'love / loved / will love', cn: '爱'}, {en: 'hate / hated / will hate', cn: '讨厌'},
+                {en: 'try / tried / will try', cn: '尝试'}, {en: 'carry / carried / will carry', cn: '携带'},
+                {en: 'wash / washed / will wash', cn: '洗'}, {en: 'wait / waited / will wait', cn: '等待'},
+                {en: 'go / went / will go', cn: '去'}, {en: 'eat / ate / will eat', cn: '吃'},
+                {en: 'do / did / will do', cn: '做'}, {en: 'buy / bought / will buy', cn: '买'},
+                {en: 'come / came / will come', cn: '来'}, {en: 'take / took / will take', cn: '拿/乘'},
+                {en: 'see / saw / will see', cn: '看见'}, {en: 'get / got / will get', cn: '得到'},
+                {en: 'make / made / will make', cn: '制作'}, {en: 'find / found / will find', cn: '找到'},
+                {en: 'tell / told / will tell', cn: '告诉'}, {en: 'say / said / will say', cn: '说'},
+                {en: 'give / gave / will give', cn: '给'}, {en: 'know / knew / will know', cn: '知道'},
+                {en: 'think / thought / will think', cn: '想/认为'}, {en: 'read / read / will read', cn: '读'},
+                {en: 'write / wrote / will write', cn: '写'}, {en: 'sing / sang / will sing', cn: '唱'},
+                {en: 'swim / swam / will swim', cn: '游泳'}, {en: 'run / ran / will run', cn: '跑'},
+                {en: 'fly / flew / will fly', cn: '飞'}, {en: 'drink / drank / will drink', cn: '喝'},
+                {en: 'begin / began / will begin', cn: '开始'}, {en: 'break / broke / will break', cn: '打破'},
+                {en: 'choose / chose / will choose', cn: '选择'}, {en: 'drive / drove / will drive', cn: '驾驶'},
+                {en: 'fall / fell / will fall', cn: '落下'}, {en: 'feel / felt / will feel', cn: '感觉'},
+                {en: 'forget / forgot / will forget', cn: '忘记'}, {en: 'hear / heard / will hear', cn: '听见'},
+                {en: 'leave / left / will leave', cn: '离开'}, {en: 'lose / lost / will lose', cn: '丢失'},
+                {en: 'meet / met / will meet', cn: '遇见'}, {en: 'pay / paid / will pay', cn: '支付'},
+                {en: 'send / sent / will send', cn: '发送'}, {en: 'sit / sat / will sit', cn: '坐'},
+                {en: 'sleep / slept / will sleep', cn: '睡觉'}, {en: 'speak / spoke / will speak', cn: '说话'},
+                {en: 'spend / spent / will spend', cn: '花费'}, {en: 'stand / stood / will stand', cn: '站立'},
+                {en: 'teach / taught / will teach', cn: '教'}, {en: 'understand / understood / will understand', cn: '理解'},
+                {en: 'wake / woke / will wake', cn: '醒来'}, {en: 'wear / wore / will wear', cn: '穿'},
+                {en: 'win / won / will win', cn: '赢'}
+            ],
+            timeWords: [
+                {en: 'yesterday', cn: '昨天'}, {en: 'tomorrow', cn: '明天'},
+                {en: 'last week', cn: '上周'}, {en: 'last month', cn: '上个月'},
+                {en: 'last year', cn: '去年'}, {en: 'last night', cn: '昨晚'},
+                {en: 'next week', cn: '下周'}, {en: 'next month', cn: '下个月'},
+                {en: 'next year', cn: '明年'}, {en: 'in the morning', cn: '在早上'},
+                {en: 'in the afternoon', cn: '在下午'}, {en: 'in the evening', cn: '在晚上'},
+                {en: 'at night', cn: '在夜间'}, {en: 'every day', cn: '每天'},
+                {en: 'every week', cn: '每周'}, {en: 'every month', cn: '每月'},
+                {en: 'ago', cn: '以前'}, {en: 'later', cn: '稍后'},
+                {en: 'soon', cn: '很快'}, {en: 'just now', cn: '刚才'}
+            ],
+            daily: [
+                {en: 'brush teeth', cn: '刷牙'}, {en: 'comb hair', cn: '梳头'},
+                {en: 'get dressed', cn: '穿衣服'}, {en: 'have breakfast', cn: '吃早餐'},
+                {en: 'have lunch', cn: '吃午餐'}, {en: 'have dinner', cn: '吃晚餐'},
+                {en: 'do homework', cn: '做作业'}, {en: 'take a bath', cn: '洗澡'},
+                {en: 'go to sleep', cn: '去睡觉'}, {en: 'wake up', cn: '醒来'},
+                {en: 'get up', cn: '起床'}, {en: 'go to bed', cn: '上床睡觉'}
+            ],
+            food: [
+                {en: 'cake', cn: '蛋糕'}, {en: 'cookie', cn: '饼干'},
+                {en: 'pie', cn: '馅饼'}, {en: 'ice cream', cn: '冰淇淋'},
+                {en: 'pizza', cn: '披萨'}, {en: 'hamburger', cn: '汉堡包'},
+                {en: 'noodle', cn: '面条'}, {en: 'dumpling', cn: '饺子'},
+                {en: 'soup', cn: '汤'}, {en: 'butter', cn: '黄油'},
+                {en: 'honey', cn: '蜂蜜'}, {en: 'jam', cn: '果酱'},
+                {en: 'oil', cn: '油'}, {en: 'pepper', cn: '胡椒'},
+                {en: 'vinegar', cn: '醋'}, {en: 'soy sauce', cn: '酱油'},
+                {en: 'yogurt', cn: '酸奶'}, {en: 'pie', cn: '派'},
+                {en: 'orange juice', cn: '橙汁'}, {en: 'apple juice', cn: '苹果汁'},
+                {en: 'coke', cn: '可乐'}, {en: 'lemonade', cn: '柠檬水'},
+                {en: 'beer', cn: '啤酒'}, {en: 'snack', cn: '零食'}
+            ],
+            places: [
+                {en: 'kitchen', cn: '厨房'}, {en: 'bathroom', cn: '浴室'},
+                {en: 'bedroom', cn: '卧室'}, {en: 'living room', cn: '客厅'},
+                {en: 'dining room', cn: '餐厅'}, {en: 'balcony', cn: '阳台'},
+                {en: 'garage', cn: '车库'}, {en: 'elevator', cn: '电梯'},
+                {en: 'stairs', cn: '楼梯'}, {en: 'roof', cn: '屋顶'},
+                {en: 'floor', cn: '地板'}, {en: 'wall', cn: '墙'},
+                {en: 'ceiling', cn: '天花板'}, {en: 'gate', cn: '大门'},
+                {en: 'path', cn: '小路'}, {en: 'pool', cn: '游泳池'},
+                {en: 'zoo', cn: '动物园'}, {en: 'park', cn: '公园'},
+                {en: 'library', cn: '图书馆'}, {en: 'post office', cn: '邮局'},
+                {en: 'bank', cn: '银行'}, {en: 'station', cn: '车站'},
+                {en: 'airport', cn: '机场'}, {en: 'hospital', cn: '医院'},
+                {en: 'theater', cn: '剧院'}, {en: 'stadium', cn: '体育场'}
+            ],
+            adjectives: [
+                {en: 'delicious', cn: '美味的'}, {en: 'terrible', cn: '糟糕的'},
+                {en: 'wonderful', cn: '精彩的'}, {en: 'boring', cn: '无聊的'},
+                {en: 'exciting', cn: '令人兴奋的'}, {en: 'surprised', cn: '惊讶的'},
+                {en: 'afraid', cn: '害怕的'}, {en: 'worried', cn: '担心的'},
+                {en: 'proud', cn: '骄傲的'}, {en: 'embarrassed', cn: '尴尬的'},
+                {en: 'nervous', cn: '紧张的'}, {en: 'calm', cn: '平静的'},
+                {en: 'friendly', cn: '友好的'}, {en: 'polite', cn: '礼貌的'},
+                {en: 'rude', cn: '粗鲁的'}, {en: 'honest', cn: '诚实的'},
+                {en: 'brave', cn: '勇敢的'}, {en: 'lazy', cn: '懒惰的'},
+                {en: 'hard-working', cn: '勤奋的'}, {en: 'clever', cn: '聪明的'},
+                {en: 'foolish', cn: '愚蠢的'}, {en: 'strict', cn: '严格的'},
+                {en: 'generous', cn: '慷慨的'}, {en: 'selfish', cn: '自私的'},
+                {en: 'patient', cn: '耐心的'}, {en: 'impatient', cn: '不耐烦的'},
+                {en: 'noisy', cn: '吵闹的'}, {en: 'peaceful', cn: '安静的'},
+                {en: 'crowded', cn: '拥挤的'}, {en: 'empty', cn: '空的'},
+                {en: 'modern', cn: '现代的'}, {en: 'ancient', cn: '古老的'},
+                {en: 'famous', cn: '著名的'}, {en: 'unknown', cn: '未知的'},
+                {en: 'thick', cn: '厚的'}, {en: 'thin', cn: '薄的/瘦的'},
+                {en: 'smooth', cn: '光滑的'}, {en: 'rough', cn: '粗糙的'},
+                {en: 'dry', cn: '干燥的'}, {en: 'wet', cn: '潮湿的'},
+                {en: 'deep', cn: '深的'}, {en: 'shallow', cn: '浅的'},
+                {en: 'wide', cn: '宽的'}, {en: 'narrow', cn: '窄的'},
+                {en: 'heavy', cn: '重的'}, {en: 'light', cn: '轻的'},
+                {en: 'strong', cn: '强壮的'}, {en: 'weak', cn: '虚弱的'},
+                {en: 'healthy', cn: '健康的'}, {en: 'unhealthy', cn: '不健康的'},
+                {en: 'comfortable', cn: '舒适的'}, {en: 'uncomfortable', cn: '不舒服的'}
+            ],
+            others: [
+                {en: 'maybe', cn: '也许'}, {en: 'probably', cn: '大概'},
+                {en: 'suddenly', cn: '突然'}, {en: 'finally', cn: '终于'},
+                {en: 'already', cn: '已经'}, {en: 'yet', cn: '还'},
+                {en: 'still', cn: '仍然'}, {en: 'even', cn: '甚至'},
+                {en: 'almost', cn: '几乎'}, {en: 'enough', cn: '足够的'},
+                {en: 'too', cn: '也/太'}, {en: 'either', cn: '也(否定)'},
+                {en: 'both', cn: '两者都'}, {en: 'neither', cn: '两者都不'},
+                {en: 'none', cn: '没有一个'}, {en: 'all', cn: '全部'},
+                {en: 'each', cn: '每个'}, {en: 'every', cn: '每一'},
+                {en: 'another', cn: '另一个'}, {en: 'other', cn: '其他的'},
+                {en: 'such', cn: '这样的'}, {en: 'own', cn: '自己的'},
+                {en: 'whole', cn: '整个的'}, {en: 'part', cn: '部分'},
+                {en: 'half', cn: '一半'}, {en: 'double', cn: '双倍的'},
+                {en: 'several', cn: '几个'}, {en: 'various', cn: '各种各样的'},
+                {en: 'certain', cn: '某个/确定的'}, {en: 'main', cn: '主要的'},
+                {en: 'special', cn: '特别的'}, {en: 'common', cn: '常见的'},
+                {en: 'public', cn: '公共的'}, {en: 'private', cn: '私人的'},
+                {en: 'free', cn: '自由的/免费的'}, {en: 'busy', cn: '忙碌的'},
+                {en: 'ready', cn: '准备好的'}, {en: 'late', cn: '迟的'},
+                {en: 'early', cn: '早的'}, {en: 'slowly', cn: '慢慢地'},
+                {en: 'quickly', cn: '快速地'}, {en: 'carefully', cn: '仔细地'},
+                {en: 'easily', cn: '容易地'}, {en: 'happily', cn: '快乐地'},
+                {en: 'loudly', cn: '大声地'}, {en: 'quietly', cn: '安静地'},
+                {en: 'badly', cn: '糟糕地'}, {en: 'well', cn: '好地'},
+                {en: 'hard', cn: '努力地'}, {en: 'together', cn: '一起'},
+                {en: 'alone', cn: '独自'}, {en: 'away', cn: '离开'},
+                {en: 'back', cn: '回来'}, {en: 'down', cn: '向下'},
+                {en: 'up', cn: '向上'}, {en: 'inside', cn: '在里面'},
+                {en: 'outside', cn: '在外面'}, {en: 'anywhere', cn: '任何地方'},
+                {en: 'everywhere', cn: '到处'}, {en: 'somewhere', cn: '某地'},
+                {en: 'nowhere', cn: '无处'}
+            ],
+            reading: [
+                'I play basketball every Saturday.',
+                'She studied hard for the exam last week.',
+                'They will visit their grandparents tomorrow.',
+                'He went to the cinema yesterday evening.',
+                'We will take a trip to the mountains next month.',
+                'My mother cooked a delicious dinner last night.',
+                'I usually wake up early in the morning.',
+                'The children played in the park all afternoon.',
+                'She will buy a new dress for the party.',
+                'He did not finish his homework on time.',
+                'We watched an exciting movie last Sunday.',
+                'They are going to have a picnic next weekend.',
+                'I lost my keys yesterday, but I found them later.',
+                'My friend drove me to the airport this morning.',
+                'She teaches English at a local school.',
+                'He broke his leg when he went skiing last winter.',
+                'We will meet at the train station at noon tomorrow.',
+                'I drank too much coffee, so I could not sleep well.',
+                'The teacher told us an interesting story.',
+                'My family traveled to Japan two years ago.'
+            ],
+            passage: 'Last summer, my family and I went to the beach for a holiday. The weather was wonderful and the sea was calm. Every morning, I woke up early and went for a swim. My brother played volleyball with some new friends he met at the hotel. My mother read novels under a big umbrella, and my father enjoyed fishing by the rocks. In the evening, we usually ate fresh seafood at a nearby restaurant. One night, we had a barbecue on the beach. We sang songs, told stories, and watched the stars. It was the most exciting holiday I have ever had. I hope we will go there again next year.',
+            fillBlank: [
+                {q: 'I ___ basketball every Saturday. (play)', a: 'play', hint: 'every Saturday 表示习惯，用现在式'},
+                {q: 'She ___ hard for the exam last week. (study)', a: 'studied', hint: 'last week 是过去时间，用过去式'},
+                {q: 'They ___ visit their grandparents tomorrow. (will)', a: 'will', hint: 'tomorrow 是将来时间'},
+                {q: 'He ___ to the cinema yesterday evening. (go)', a: 'went', hint: 'yesterday 是过去时间，go 的过去式是 went'},
+                {q: 'We ___ an exciting movie last Sunday. (watch)', a: 'watched', hint: 'last Sunday 用过去式'},
+                {q: 'I ___ my keys yesterday, but I ___ them later. (lose, find)', a: 'lost, found', hint: 'yesterday 用过去式'},
+                {q: 'She ___ English at a local school. (teach)', a: 'teaches', hint: '表示现在的工作，第三人称单数加 es'},
+                {q: 'My family ___ to Japan two years ago. (travel)', a: 'traveled', hint: 'two years ago 用过去式'},
+                {q: 'We ___ go there again next year. (will)', a: 'will', hint: 'next year 是将来时间'},
+                {q: 'He ___ his leg when he ___ skiing last winter. (break, go)', a: 'broke, went', hint: 'last winter 用过去式'}
+            ],
+            translations: [
+                {cn: '我每天早上七点起床。', en: 'I get up at seven o\'clock every morning.'},
+                {cn: '她昨晚做了一顿美味的晚餐。', en: 'She cooked a delicious dinner last night.'},
+                {cn: '我们下个月要去山里旅行。', en: 'We will take a trip to the mountains next month.'},
+                {cn: '他去年冬天去滑雪时摔断了腿。', en: 'He broke his leg when he went skiing last winter.'},
+                {cn: '我的朋友今天早上开车送我去机场。', en: 'My friend drove me to the airport this morning.'},
+                {cn: '我喝了太多咖啡，所以睡不好。', en: 'I drank too much coffee, so I could not sleep well.'},
+                {cn: '老师给我们讲了一个有趣的故事。', en: 'The teacher told us an interesting story.'},
+                {cn: '这是我有过的最精彩的假期。', en: 'It was the most exciting holiday I have ever had.'},
+                {cn: '我希望我们明年能再去那里。', en: 'I hope we will go there again next year.'},
+                {cn: '他在当地一所学校教英语。', en: 'He teaches English at a local school.'}
+            ]
+        };
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US'; utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            } else { alert('浏览器不支持语音朗读'); }
+        }
+        function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+        let dictationMode = 'cn2en', currentQuestions = [], currentIndex = 0, wrongAttempts = 0, score = 0;
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            if (tabName === 'vocab') initVocab();
+            if (tabName === 'reading') initReading();
+        }
+        function createVocabCard(item) {
+            return '<div class="vocab-card"><button class="speaker-btn" onclick="speak(' + "'" + item.en.replace(/'/g, "\\'") + "'" + ')">🔊</button><div class="en">' + item.en + '</div><div>' + item.cn + '</div></div>';
+        }
+        function initVocab() {
+            document.getElementById('vocab-verbs').innerHTML = lessonData.verbs.map(createVocabCard).join('');
+            document.getElementById('vocab-time').innerHTML = lessonData.timeWords.map(createVocabCard).join('');
+            document.getElementById('vocab-daily').innerHTML = lessonData.daily.map(createVocabCard).join('');
+            document.getElementById('vocab-food').innerHTML = lessonData.food.map(createVocabCard).join('');
+            document.getElementById('vocab-places').innerHTML = lessonData.places.map(createVocabCard).join('');
+            document.getElementById('vocab-adj').innerHTML = lessonData.adjectives.map(createVocabCard).join('');
+            document.getElementById('vocab-others').innerHTML = lessonData.others.map(createVocabCard).join('');
+        }
+        function initReading() {
+            document.getElementById('reading-sentences').innerHTML = lessonData.reading.map(function(s) {
+                return '<div class="reading-item">' + s + '<button class="speaker-btn" onclick="speak(' + "'" + s.replace(/'/g, "\\'") + "'" + ')">🔊</button></div>';
+            }).join('');
+            document.getElementById('reading-passage').innerHTML = '<div class="reading-item">' + lessonData.passage + '<button class="speaker-btn" onclick="speak(' + "'" + lessonData.passage.replace(/'/g, "\\'") + "'" + ')">🔊</button></div>';
+        }
+        function setDictationMode(mode) {
+            dictationMode = mode;
+            document.querySelectorAll('.mode-toggle button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            startDictation();
+        }
+        function startDictation() {
+            const allVocab = [...lessonData.verbs, ...lessonData.timeWords, ...lessonData.daily, ...lessonData.food, ...lessonData.places, ...lessonData.adjectives, ...lessonData.others];
+            currentQuestions = shuffle(allVocab).slice(0, 20);
+            currentIndex = 0; score = 0;
+            showDictationQuestion();
+        }
+        function showDictationQuestion() {
+            if (currentIndex >= currentQuestions.length) { showCompletion('dictation-quiz', score, currentQuestions.length); return; }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            const prompt = dictationMode === 'cn2en' ? q.cn : q.en;
+            const answer = dictationMode === 'cn2en' ? q.en : q.cn;
+            document.getElementById('dictation-quiz').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">' + (dictationMode === 'cn2en' ? '请输入英文：' : '请输入中文：') + '<br><br><strong>' + prompt + '</strong>' +
+                (dictationMode === 'cn2en' ? '<button class="quiz-btn" onclick="speak(' + "'" + answer.replace(/'/g, "\\'") + "'" + ')" style="margin-left:10px;">🔊 朗读</button>' : '') + '</div>' +
+                '<input type="text" class="quiz-input" id="answer-input" placeholder="请输入答案">' +
+                '<br><button class="quiz-btn" onclick="checkDictationAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkDictationAnswer(); };
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+        function checkDictationAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
+            const q = currentQuestions[currentIndex];
+            const correctAnswer = dictationMode === 'cn2en' ? q.en : q.cn;
+            const userAnswer = input.value.trim();
+            if (!userAnswer) return;
+            if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+                score++;
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct'; feedback.textContent = '回答正确！';
+                setTimeout(() => { currentIndex++; showDictationQuestion(); }, 1200);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '回答错误（第' + wrongAttempts + '次尝试）';
+                input.value = ''; input.focus();
+                const questionText = dictationMode === 'cn2en' ? q.cn : q.en; WrongAnswersManager.save({type: 'dictation', q: questionText, a: correctAnswer, lesson: 'L4'});
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showAnswer(' + "'" + correctAnswer.replace(/'/g, "\\'") + "'" + ')">显示答案</button>';
+            }
+        }
+        function showAnswer(answer) {
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">正确答案：' + answer + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showDictationQuestion(); }, 5000);
+        }
+        function startFillBlank() {
+            currentQuestions = shuffle(lessonData.fillBlank).slice(0, 10);
+            currentIndex = 0; score = 0;
+            showFillBlankQuestion();
+        }
+        function showFillBlankQuestion() {
+            if (currentIndex >= currentQuestions.length) { showCompletion('fillblank-quiz', score, currentQuestions.length); return; }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            document.getElementById('fillblank-quiz').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">' + q.q.replace('___', '_____') + '</div>' +
+                '<div class="hint-text" id="hint-text">提示：' + q.hint + '</div>' +
+                '<input type="text" class="quiz-input" id="answer-input" placeholder="填入正确答案">' +
+                '<br><button class="quiz-btn" onclick="checkFillBlankAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            document.getElementById('answer-input').onkeypress = function(e) { if(e.key==='Enter') checkFillBlankAnswer(); };
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+        function checkFillBlankAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback'), hintText = document.getElementById('hint-text');
+            const q = currentQuestions[currentIndex];
+            const userAnswer = input.value.trim().toLowerCase().replace(/，/g, ',');
+            if (!userAnswer) return;
+            const correctAnswers = q.a.toLowerCase().split(',').map(s => s.trim());
+            const userAnswers = userAnswer.split(',').map(s => s.trim());
+            let isCorrect = false;
+            if (correctAnswers.length === 1) {
+                isCorrect = userAnswers.join(',') === correctAnswers[0];
+            } else {
+                isCorrect = userAnswers.join(',') === correctAnswers.join(',');
+            }
+            if (isCorrect) {
+                score++;
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct'; feedback.textContent = '回答正确！';
+                WrongAnswersManager.recordCorrect({type: 'fillblank', q: q.q, a: q.a, hint: q.hint, lesson: 'L4'});
+                setTimeout(() => { currentIndex++; showFillBlankQuestion(); }, 1200);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '回答错误（第' + wrongAttempts + '次尝试）';
+                hintText.classList.add('show');
+                input.value = ''; input.focus();
+                WrongAnswersManager.save({type: 'fillblank', q: q.q, a: q.a, hint: q.hint, lesson: 'L4'});
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showFillBlankAnswer()">显示答案</button>';
+            }
+        }
+        function showFillBlankAnswer() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">正确答案：' + q.a + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showFillBlankQuestion(); }, 5000);
+        }
+        function startTranslate() {
+            currentQuestions = shuffle(lessonData.translations).slice(0, 10);
+            currentIndex = 0; score = 0;
+            showTranslateQuestion();
+        }
+        function showTranslateQuestion() {
+            if (currentIndex >= currentQuestions.length) { showCompletion('translate-quiz', score, currentQuestions.length); return; }
+            wrongAttempts = 0;
+            const q = currentQuestions[currentIndex];
+            document.getElementById('translate-quiz').innerHTML = 
+                '<div class="quiz-progress">题目 ' + (currentIndex + 1) + ' / ' + currentQuestions.length + '</div>' +
+                '<div class="quiz-question">请将以下中文翻译成英文：<br><br><strong style="font-size:1.3em;">"' + q.cn + '"</strong></div>' +
+                '<textarea class="quiz-input" id="answer-input" rows="3" placeholder="请输入英文翻译"></textarea>' +
+                '<br><button class="quiz-btn" onclick="checkTranslateAnswer()">提交答案</button>' +
+                '<div id="hint-btn-container"></div><div class="quiz-feedback" id="feedback"></div>';
+            setTimeout(() => document.getElementById('answer-input').focus(), 100);
+        }
+        function checkTranslateAnswer() {
+            const input = document.getElementById('answer-input'), feedback = document.getElementById('feedback');
+            const q = currentQuestions[currentIndex];
+            const userAnswer = input.value.trim().toLowerCase().replace(/[^a-z\s']/g, '');
+            const correctAnswer = q.en.toLowerCase().replace(/[^a-z\s']/g, '');
+            if (!userAnswer) return;
+            if (userAnswer === correctAnswer) {
+                score++;
+                input.className = 'quiz-input correct'; input.disabled = true;
+                feedback.className = 'quiz-feedback show correct'; feedback.textContent = '回答正确！';
+                WrongAnswersManager.recordCorrect({type: 'translate', cn: q.cn, en: q.en, lesson: 'L4'});
+                setTimeout(() => { currentIndex++; showTranslateQuestion(); }, 1200);
+            } else {
+                wrongAttempts++;
+                input.className = 'quiz-input wrong';
+                feedback.className = 'quiz-feedback show wrong';
+                feedback.textContent = '回答错误（第' + wrongAttempts + '次尝试）';
+                WrongAnswersManager.save({type: 'translate', cn: q.cn, en: q.en, lesson: 'L4'});
+                if (wrongAttempts >= 3) document.getElementById('hint-btn-container').innerHTML = '<button class="quiz-btn hint-btn" onclick="showTranslateAnswer()">显示答案</button>';
+            }
+        }
+        function showTranslateAnswer() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('feedback').innerHTML = '<div class="answer-display">参考答案：' + q.en + '</div>';
+            document.getElementById('feedback').className = 'quiz-feedback show';
+            setTimeout(() => { currentIndex++; showTranslateQuestion(); }, 5000);
+        }
+        function showCompletion(containerId, score, total) {
+            const percentage = Math.round(score / total * 100);
+            let stars = '⭐';
+            if (percentage >= 60) stars = '⭐⭐';
+            if (percentage >= 80) stars = '⭐⭐⭐';
+            if (percentage === 100) stars = '🏆⭐⭐⭐🏆';
+            document.getElementById(containerId).innerHTML = '<div class="completion-message"><h2>练习完成！</h2><div class="stars">' + stars + '</div><p style="font-size:1.3em;">得分：' + score + ' / ' + total + ' (' + percentage + '%)</p><button class="quiz-btn" onclick="location.reload()">再来一次</button></div>';
+        }
+        initVocab();
+        initReading();
+    </script>
+</body>
+</html>
