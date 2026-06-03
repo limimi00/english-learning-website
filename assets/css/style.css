@@ -17,6 +17,7 @@
   --glass-strong: rgba(255, 255, 255, 0.88);
   --active-glow: 0 0 0 7px rgba(45, 125, 115, 0.09);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --sticky-title-height: 112px;
 }
 
 * {
@@ -89,6 +90,25 @@ button:disabled {
   border-bottom: 1px solid rgba(220, 228, 223, 0.72);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+
+.sticky-subtitlebar {
+  position: sticky;
+  top: var(--sticky-title-height);
+  z-index: 19;
+  margin-top: -6px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.sticky-subtitlebar .meta {
+  margin-bottom: 0;
+}
+
+.vocabulary-results,
+.wrongbook-results {
+  margin-top: -4px;
 }
 
 .eyebrow {
@@ -577,6 +597,10 @@ textarea.answer-input {
 }
 
 @media (max-width: 520px) {
+  :root {
+    --sticky-title-height: 132px;
+  }
+
   .topbar {
     align-items: flex-start;
     flex-wrap: wrap;
