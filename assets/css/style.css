@@ -17,7 +17,6 @@
   --glass-strong: rgba(255, 255, 255, 0.88);
   --active-glow: 0 0 0 7px rgba(45, 125, 115, 0.09);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --sticky-title-height: 112px;
 }
 
 * {
@@ -86,29 +85,32 @@ button:disabled {
   top: 0;
   z-index: 20;
   padding: 12px 0;
-  background: rgba(246, 247, 244, 0.92);
+  background: var(--bg);
   border-bottom: 1px solid rgba(220, 228, 223, 0.72);
+  box-shadow: 0 8px 20px rgba(20, 43, 40, 0.06);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
-.sticky-subtitlebar {
-  position: sticky;
-  top: var(--sticky-title-height);
-  z-index: 19;
-  margin-top: -6px;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+.stacked-titlebar {
+  display: block;
 }
 
-.sticky-subtitlebar .meta {
+.titlebar-controls {
+  margin-top: 14px;
+}
+
+.titlebar-controls .toolbar {
+  margin-bottom: 10px;
+}
+
+.titlebar-controls .meta {
   margin-bottom: 0;
 }
 
 .vocabulary-results,
 .wrongbook-results {
-  margin-top: -4px;
+  margin-top: 0;
 }
 
 .eyebrow {
@@ -597,10 +599,6 @@ textarea.answer-input {
 }
 
 @media (max-width: 520px) {
-  :root {
-    --sticky-title-height: 132px;
-  }
-
   .topbar {
     align-items: flex-start;
     flex-wrap: wrap;

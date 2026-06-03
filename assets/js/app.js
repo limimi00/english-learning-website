@@ -258,8 +258,7 @@ function renderVocabulary() {
   });
 
   app.innerHTML = `
-    ${header('去重词库', '同一个词只保留一次，但会记录它来自哪些课本。')}
-    <section class="section-band sticky-subtitlebar">
+    ${header('去重词库', '同一个词只保留一次，但会记录它来自哪些课本。', `
       <div class="toolbar">
         <input id="word-search" class="search-input" type="search" placeholder="搜索英文或中文" value="${escapeHtml(rawQuery)}">
         <select id="lesson-filter" class="select-input" aria-label="筛选课本">
@@ -268,7 +267,7 @@ function renderVocabulary() {
         </select>
       </div>
       <p class="meta">当前显示 ${filtered.length} 个 / 去重总数 ${vocabulary.length} 个 · ${escapeHtml(selectedLessonTitle)}</p>
-    </section>
+    `)}
     <section class="section-band vocabulary-results">
       <div class="list two-col">
         ${filtered.map(wordCard).join('') || empty('没有找到匹配词汇')}
@@ -306,19 +305,12 @@ function renderPractice() {
 function renderWrongBook() {
   const items = wrongVocabulary();
   app.innerHTML = `
-    <div class="topbar sticky-titlebar">
-      <div>
-        <p class="eyebrow">Practice</p>
-        <h1>错题汇总</h1>
-        <p class="lead">错题答对 ${WRONG_CLEAR_CORRECT_COUNT} 次后会自动移出。</p>
-      </div>
-    </div>
-    <section class="section-band sticky-subtitlebar">
+    ${header('错题汇总', `错题答对 ${WRONG_CLEAR_CORRECT_COUNT} 次后会自动移出。`, `
       <div class="toolbar">
         <button class="primary-button" type="button" data-action="start-wrong-practice" ${items.length ? '' : 'disabled'}>练这些错题</button>
         <span class="pill">${items.length} 个错题</span>
       </div>
-    </section>
+    `)}
     <section class="section-band wrongbook-results">
       <div class="list two-col">
         ${items.map(wordCard).join('') || empty('暂时没有错题。')}
@@ -643,14 +635,16 @@ function wordCard(item) {
   `;
 }
 
-function header(title, subtitle) {
+function header(title, subtitle, extraContent = '') {
+  const extra = String(extraContent || '').trim();
   return `
-    <div class="topbar sticky-titlebar">
-      <div>
+    <div class="topbar sticky-titlebar${extra ? ' stacked-titlebar' : ''}">
+      <div class="titlebar-copy">
         <p class="eyebrow">Study</p>
         <h1>${escapeHtml(title)}</h1>
         <p class="lead">${escapeHtml(subtitle)}</p>
       </div>
+      ${extra ? `<div class="titlebar-controls">${extra}</div>` : ''}
     </div>
   `;
 }
