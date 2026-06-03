@@ -277,19 +277,10 @@ function renderVocabulary() {
 
 function renderPractice() {
   const stats = getStats();
-  const wrongItems = wrongVocabulary();
   app.innerHTML = `
     ${header('综合练习', '这里练语法、翻译和问答；单词练习在今日学习里完成。')}
     <section class="section-band">
       <div class="list">
-        <article class="practice-item">
-          <h3>错题本</h3>
-          <p class="meta">当前 ${wrongItems.length} 个错题，答对 ${WRONG_CLEAR_CORRECT_COUNT} 次后自动移出。</p>
-          <div class="button-row">
-            <button class="primary-button" type="button" data-action="open-wrongbook">查看错题</button>
-            <button class="secondary-button" type="button" data-action="start-wrong-practice" ${wrongItems.length ? '' : 'disabled'}>错题练习</button>
-          </div>
-        </article>
         <article class="practice-item">
           <h3>语法填空</h3>
           <p class="meta">从所有课本的语法填空中抽题。</p>
@@ -423,7 +414,7 @@ function renderStage(stage, item) {
 function renderGrammarPractice() {
   const questions = allFillBlanks().slice(0, 12);
   app.innerHTML = `
-    ${header('语法填空', '答错会看到正确答案，可以反复练。')}
+    ${practiceHeader('语法填空', '答错会看到正确答案，可以反复练。')}
     <section class="section-band">
       <div class="list">
         ${questions.map((item, index) => `
@@ -444,7 +435,7 @@ function renderGrammarPractice() {
 function renderQuestionPractice() {
   const questions = allQuestions().slice(0, 20);
   app.innerHTML = `
-    ${header('问答练习', '点朗读，自己口头回答；也可以写下答案。')}
+    ${practiceHeader('问答练习', '点朗读，自己口头回答；也可以写下答案。')}
     <section class="section-band">
       <div class="list">
         ${questions.map((question) => `
@@ -661,6 +652,19 @@ function header(title, subtitle) {
   `;
 }
 
+function practiceHeader(title, subtitle) {
+  return `
+    <div class="topbar">
+      <div>
+        <p class="eyebrow">Study</p>
+        <h1>${escapeHtml(title)}</h1>
+        <p class="lead">${escapeHtml(subtitle)}</p>
+      </div>
+      <button class="ghost-button" type="button" data-action="back" data-route="practice">退出</button>
+    </div>
+  `;
+}
+
 function statBlock(number, label) {
   return `<div class="stat"><span class="stat-number">${number}</span><span class="stat-label">${escapeHtml(label)}</span></div>`;
 }
@@ -684,15 +688,14 @@ function empty(text) {
 function getStats(lessonId = 'all') {
   const words = scopedVocabulary(lessonId);
   const wordKeys = new Set(words.map((item) => item.key));
-  const states = Object.values(progress);
   const scopedStates = Object.entries(progress)
     .filter(([key]) => wordKeys.has(key))
     .map(([, state]) => state);
   const due = words.filter((item) => progress[item.key]?.status === 'review' && progress[item.key]?.dueDate <= todayKey()).length;
   return {
     total: words.length,
-    mastered: scopedStates.filter((item) => item.status === 'mastered').length,
-    learning: scopedStates.filter((item) => item.status === 'learning' || item.status === 'review').length,
+    mastered: scopedStates.filter((item) => item.status === 'mastered' || item.status === 'review').length,
+    learning: scopedStates.filter((item) => item.status === 'learning').length,
     wrong: wrongVocabulary(lessonId).length,
     due,
   };
@@ -820,7 +823,6 @@ function setActiveNav() {
   navButtons.forEach((button) => {
     const active = button.dataset.route === route ||
       (route === 'lesson-detail' && button.dataset.route === 'lessons') ||
-      (route === 'wrongbook' && button.dataset.route === 'practice') ||
       (route === 'study' && button.dataset.route === 'home');
     button.classList.toggle('active', active);
   });

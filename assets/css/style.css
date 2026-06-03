@@ -471,7 +471,7 @@ textarea.answer-input {
   right: 0;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0;
   width: min(100%, 860px);
   margin: 0 auto;
@@ -492,7 +492,7 @@ textarea.answer-input {
   place-items: center;
   align-content: center;
   gap: 2px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
