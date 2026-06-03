@@ -1,7 +1,0 @@
-{
-  "type": "module",
-  "scripts": {
-    "test": "node --test tests/study-engine.test.mjs",
-    "preview": "node tools/preview.mjs"
-  }
-}
