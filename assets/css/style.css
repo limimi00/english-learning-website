@@ -80,6 +80,17 @@ button:disabled {
   gap: 8px;
 }
 
+.sticky-titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 12px 0;
+  background: rgba(246, 247, 244, 0.92);
+  border-bottom: 1px solid rgba(220, 228, 223, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: var(--green);

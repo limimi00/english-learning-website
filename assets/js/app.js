@@ -304,10 +304,10 @@ function renderPractice() {
 function renderWrongBook() {
   const items = wrongVocabulary();
   app.innerHTML = `
-    <div class="topbar">
+    <div class="topbar sticky-titlebar">
       <div>
         <p class="eyebrow">Practice</p>
-        <h1>错题本</h1>
+        <h1>错题汇总</h1>
         <p class="lead">错题答对 ${WRONG_CLEAR_CORRECT_COUNT} 次后会自动移出。</p>
       </div>
       <button class="ghost-button" type="button" data-action="back" data-route="practice">返回</button>
@@ -642,7 +642,7 @@ function wordCard(item) {
 
 function header(title, subtitle) {
   return `
-    <div class="topbar">
+    <div class="topbar sticky-titlebar">
       <div>
         <p class="eyebrow">Study</p>
         <h1>${escapeHtml(title)}</h1>
