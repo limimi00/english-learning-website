@@ -1,11 +1,20 @@
 const REVIEW_INTERVAL_DAYS = [1, 3, 7];
 export const WRONG_CLEAR_CORRECT_COUNT = 5;
+const SPELLING_VARIANTS = new Map([
+  ['centre', 'center'],
+  ['grey', 'gray'],
+]);
 
 export function normalizeTermKey(term) {
-  return String(term || '')
+  const normalized = String(term || '')
     .trim()
     .replace(/\s+/g, ' ')
     .toLowerCase();
+
+  return normalized
+    .split(' ')
+    .map((part) => SPELLING_VARIANTS.get(part) || part)
+    .join(' ');
 }
 
 export function buildVocabularyIndex(lessons) {

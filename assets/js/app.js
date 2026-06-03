@@ -57,7 +57,10 @@ app.addEventListener('click', (event) => {
     render();
   }
   if (name === 'next-stage') nextStage();
-  if (name === 'choose-answer') checkChoice(action.dataset.answer);
+  if (name === 'choose-answer') {
+    action.blur();
+    checkChoice(action.dataset.answer);
+  }
   if (name === 'retry-stage') retryStage();
   if (name === 'continue-after-feedback') continueAfterFeedback();
   if (name === 'open-wrongbook') {
@@ -189,7 +192,7 @@ function renderLessons() {
             <h3>${escapeHtml(lesson.title)}</h3>
             <p class="meta">${escapeHtml(lesson.focus)}</p>
             <div class="pill-row">
-              <span class="pill">${lesson.vocabulary.length} 个词/短语</span>
+              <span class="pill">${scopedVocabulary(lesson.id).length} 个词/短语</span>
               <span class="pill">${lesson.sentences.length} 个句子</span>
               <span class="pill">${lesson.questions.length} 个问答</span>
             </div>
@@ -229,7 +232,7 @@ function renderLessonDetail() {
     <section class="section-band">
       <h2>词汇</h2>
       <div class="list two-col">
-        ${lesson.vocabulary.slice(0, 80).map((item) => wordCard({ ...item, key: normalizeTermKey(item.en), sources: [lesson.id] })).join('')}
+        ${scopedVocabulary(lesson.id).slice(0, 80).map((item) => wordCard(item)).join('')}
       </div>
     </section>
     <section class="section-band">
