@@ -537,10 +537,16 @@ textarea.answer-input {
   text-align: left;
 }
 
-.choice-button:hover,
 .choice-button:focus-visible {
   border-color: var(--clay);
   outline: 3px solid rgba(208, 138, 97, 0.14);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .choice-button:hover {
+    border-color: var(--clay);
+    outline: 3px solid rgba(208, 138, 97, 0.14);
+  }
 }
 
 .feedback {
