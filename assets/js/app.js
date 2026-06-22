@@ -1,7 +1,9 @@
 import { lessons } from '../../data/lessons.js';
 import {
   buildDailyPlan,
+  buildGeneratedSentenceItems,
   buildVocabularyIndex,
+  buildWordPracticeItems,
   evaluateWordProgress,
   isAnswerMatch,
   normalizeTermKey,
@@ -11,18 +13,23 @@ import {
 
 const STORAGE_KEY = 'english_learning_v2_progress';
 const SETTINGS_KEY = 'english_learning_v2_settings';
+const DRILL_PROGRESS_KEY = 'english_learning_v2_drill_progress';
 const STAGES = ['listen', 'choice', 'dictation', 'fillblank'];
 
 const app = document.querySelector('#app');
 const navButtons = Array.from(document.querySelectorAll('.nav-button'));
 const vocabulary = buildVocabularyIndex(lessons);
+const wordPracticeItems = buildWordPracticeItems(lessons);
+const sentencePracticeItems = buildGeneratedSentenceItems(lessons);
 
 let route = 'home';
 let activeLessonId = null;
 let activeFeedback = null;
 let session = null;
+let drillSession = null;
 let progress = loadJson(STORAGE_KEY, {});
 let settings = loadJson(SETTINGS_KEY, { dailyLimit: 15, dailyLessonId: 'all' });
+let drillProgress = normalizeDrillProgress(loadJson(DRILL_PROGRESS_KEY, emptyDrillProgress()));
 let vocabularyFilters = { query: '', lessonId: 'all' };
 
 render();
@@ -32,6 +39,7 @@ navButtons.forEach((button) => {
     route = button.dataset.route;
     activeFeedback = null;
     session = null;
+    drillSession = null;
     setActiveNav();
     render();
   });
@@ -54,6 +62,7 @@ app.addEventListener('click', (event) => {
     route = 'home';
     activeFeedback = null;
     session = null;
+    drillSession = null;
     render();
   }
   if (name === 'next-stage') nextStage();
@@ -77,10 +86,17 @@ app.addEventListener('click', (event) => {
   }
   if (name === 'practice-grammar') renderGrammarPractice();
   if (name === 'practice-questions') renderQuestionPractice();
+  if (name === 'start-word-learning') startWordLearning();
+  if (name === 'start-word-practice') startWordPractice();
+  if (name === 'start-sentence-learning') startSentenceLearning();
+  if (name === 'start-sentence-practice') startSentencePractice();
+  if (name === 'next-drill') nextDrillItem();
+  if (name === 'restart-drill') restartDrillPractice();
   if (name === 'reset-progress') resetProgress();
   if (name === 'back') {
     route = action.dataset.route || 'home';
     activeFeedback = null;
+    drillSession = null;
     render();
   }
   setActiveNav();
@@ -93,6 +109,8 @@ app.addEventListener('keydown', (event) => {
   event.preventDefault();
   action.click();
 });
+
+document.addEventListener('keydown', handleDrillShortcut);
 
 app.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -107,12 +125,18 @@ app.addEventListener('submit', (event) => {
     const item = form.dataset.index ? allTranslations()[Number(form.dataset.index)] : null;
     checkPracticeAnswer(form, item?.en || '');
   }
+  if (form.dataset.form === 'drill-practice') {
+    checkDrillAnswer(form);
+  }
 });
 
 app.addEventListener('input', (event) => {
   if (event.target.id === 'word-search') {
     vocabularyFilters.query = event.target.value;
     renderVocabulary();
+  }
+  if (event.target.id === 'drill-answer') {
+    updateDrillSlots(event.target.value);
   }
 });
 
@@ -281,14 +305,37 @@ function renderVocabulary() {
 
 function renderPractice() {
   const stats = getStats();
+  const drillStats = getDrillStats();
+  const wordPracticeReady = canPracticeWords();
+  const sentencePracticeReady = canPracticeSentences();
   app.innerHTML = `
-    ${header('综合练习', '这里练语法、翻译和问答；单词练习在今日学习里完成。')}
+    ${header('综合练习', '单词和句子分开学习；先学习，才可以进入对应练习。')}
     <section class="section-band">
       <div class="list">
         <article class="practice-item">
+          <h3>单词学习</h3>
+          <p class="meta">全课本去重词汇 ${wordPracticeItems.length} 个，已记住 ${drillStats.learnedWords} 个。</p>
+          <button class="primary-button" type="button" data-action="start-word-learning">开始学习</button>
+        </article>
+        <article class="practice-item">
+          <h3>单词练习</h3>
+          <p class="meta">${wordPracticeReady ? `练已学习的 ${drillStats.learnedWords} 个单词。` : '先完成单词学习，才能进入单词练习。'}</p>
+          <button class="secondary-button" type="button" data-action="start-word-practice" ${wordPracticeReady ? '' : 'disabled'}>开始练习</button>
+        </article>
+        <article class="practice-item">
+          <h3>句子学习</h3>
+          <p class="meta">用全课本词汇生成新句子 ${sentencePracticeItems.length} 句，已学习 ${drillStats.learnedSentences} 句。</p>
+          <button class="primary-button" type="button" data-action="start-sentence-learning">开始学习</button>
+        </article>
+        <article class="practice-item">
+          <h3>句子练习</h3>
+          <p class="meta">${sentencePracticeReady ? `练已学习的 ${drillStats.learnedSentences} 个句子。` : '先完成句子学习，才能进入句子练习。'}</p>
+          <button class="secondary-button" type="button" data-action="start-sentence-practice" ${sentencePracticeReady ? '' : 'disabled'}>开始练习</button>
+        </article>
+        <article class="practice-item">
           <h3>语法填空</h3>
           <p class="meta">从所有课本的语法填空中抽题。</p>
-          <button class="primary-button" type="button" data-action="practice-grammar">开始</button>
+          <button class="secondary-button" type="button" data-action="practice-grammar">开始</button>
         </article>
         <article class="practice-item">
           <h3>问答练习</h3>
@@ -449,6 +496,218 @@ function renderQuestionPractice() {
       </div>
     </section>
   `;
+}
+
+function startWordLearning() {
+  startDrillSession('word', 'learn', wordPracticeItems);
+}
+
+function startWordPractice() {
+  const learned = learnedWordKeys();
+  const items = wordPracticeItems.filter((item) => learned.has(item.key));
+  if (!items.length) {
+    renderDrillLocked('单词练习', '先完成单词学习，才能进入单词练习。', 'start-word-learning', '去学习单词');
+    return;
+  }
+  startDrillSession('word', 'practice', shuffle(items).slice(0, 24));
+}
+
+function startSentenceLearning() {
+  startDrillSession('sentence', 'learn', sentencePracticeItems);
+}
+
+function startSentencePractice() {
+  const learned = learnedSentenceIds();
+  const items = sentencePracticeItems.filter((item) => learned.has(item.id));
+  if (!items.length) {
+    renderDrillLocked('句子练习', '先完成句子学习，才能进入句子练习。', 'start-sentence-learning', '去学习句子');
+    return;
+  }
+  startDrillSession('sentence', 'practice', shuffle(items).slice(0, 24));
+}
+
+function startDrillSession(type, mode, items) {
+  drillSession = {
+    type,
+    mode,
+    items,
+    index: 0,
+    feedback: null,
+  };
+  renderDrillPractice();
+}
+
+function renderDrillLocked(title, text, action, label) {
+  app.innerHTML = `
+    ${practiceHeader(title, text)}
+    <section class="section-band">
+      <div class="practice-item">
+        <h3>还不能练习</h3>
+        <p class="meta">${escapeHtml(text)}</p>
+        <div class="button-row" style="margin-top:12px">
+          <button class="primary-button" type="button" data-action="${action}">${escapeHtml(label)}</button>
+          <button class="ghost-button" type="button" data-action="back" data-route="practice">返回练习</button>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderDrillPractice() {
+  if (!drillSession || !drillSession.items.length) {
+    app.innerHTML = `
+      ${practiceHeader(drillTitle(), '题库里暂时没有可学习的内容。')}
+      <section class="section-band">
+        ${empty('可以先去课本页查看已有词汇和句子。')}
+      </section>
+    `;
+    return;
+  }
+
+  const item = currentDrillItem();
+  const feedback = drillSession.feedback;
+  const answered = feedback?.type === 'ok';
+  const learning = drillSession.mode === 'learn';
+  const progressLabel = `${drillSession.index + 1} / ${drillSession.items.length}`;
+  const detail = `${drillTypeLabel()} · ${sourceTitle(item.lessonId)}`;
+
+  app.innerHTML = `
+    ${practiceHeader(drillTitle(), `第 ${progressLabel} 题 · ${detail}`)}
+    <section class="section-band word-sentence-panel">
+      <article class="word-sentence-card">
+        <div class="word-sentence-cn">${escapeHtml(item.cn)}</div>
+        ${answerSlots(item.en, learning || answered)}
+        ${item.type === 'sentence' ? `<p class="meta drill-source">课本词汇：${item.tokens.map((token) => escapeHtml(token)).join(' / ')}</p>` : ''}
+        ${learning ? drillLearnActions() : drillPracticeForm(answered)}
+        ${feedback ? drillFeedback(feedback) : ''}
+      </article>
+    </section>
+  `;
+  answered ? focusDrillNext() : focusDrillInput();
+}
+
+function drillPracticeForm(answered) {
+  return answered ? '' : `
+    <form class="study-form word-sentence-form" data-form="drill-practice">
+      <input id="drill-answer" class="answer-input" name="answer" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" autofocus placeholder="输入完整英文">
+      <button class="primary-button" type="submit">提交</button>
+    </form>
+  `;
+}
+
+function drillLearnActions() {
+  return `
+    <div class="feedback-actions">
+      <button class="primary-button" type="button" data-action="next-drill">记住了</button>
+    </div>
+  `;
+}
+
+function renderDrillComplete() {
+  const type = drillSession?.type || 'word';
+  const learning = drillSession?.mode === 'learn';
+  const practiceAction = type === 'word' ? 'start-word-practice' : 'start-sentence-practice';
+  const completedTitle = type === 'word' ? '单词学习完成' : '句子学习完成';
+  const title = learning ? completedTitle : `${drillTypeLabel()}练习完成`;
+  const text = learning ? '已经记住本轮内容，可以开始练习。' : '可以再来一轮，或回到综合练习。';
+
+  app.innerHTML = `
+    ${practiceHeader(title, text)}
+    <section class="section-band">
+      <div class="practice-item">
+        <h3>完成一轮</h3>
+        <p class="meta">${escapeHtml(text)}</p>
+        <div class="button-row" style="margin-top:12px">
+          <button class="primary-button" type="button" data-action="${learning ? practiceAction : 'restart-drill'}">${learning ? '开始练习' : '再练一轮'}</button>
+          <button class="ghost-button" type="button" data-action="back" data-route="practice">返回练习</button>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function currentDrillItem() {
+  return drillSession.items[drillSession.index];
+}
+
+function checkDrillAnswer(form) {
+  if (!drillSession) return;
+  const item = currentDrillItem();
+  const answer = new FormData(form).get('answer');
+
+  if (!normalizeTermKey(answer)) {
+    drillSession.feedback = { type: 'bad', text: '先输入答案再提交。' };
+    renderDrillPractice();
+    return;
+  }
+
+  if (isAnswerMatch(item.en, answer)) {
+    drillSession.feedback = { type: 'ok', text: '回答正确。' };
+    launchConfetti();
+    renderDrillPractice();
+    return;
+  }
+
+  drillSession.feedback = { type: 'bad', text: `参考答案：${item.en}` };
+  renderDrillPractice();
+}
+
+function nextDrillItem() {
+  if (!drillSession) return;
+  if (drillSession.mode === 'learn') rememberDrillItem(currentDrillItem());
+  drillSession.index += 1;
+  drillSession.feedback = null;
+
+  if (drillSession.index >= drillSession.items.length) {
+    renderDrillComplete();
+    return;
+  }
+
+  renderDrillPractice();
+}
+
+function restartDrillPractice() {
+  if (!drillSession) {
+    renderPractice();
+    return;
+  }
+  if (drillSession.type === 'sentence') {
+    startSentencePractice();
+    return;
+  }
+  startWordPractice();
+}
+
+function answerSlots(answer, reveal = false) {
+  return `
+    <div class="answer-slots" aria-label="英文答案">
+      ${answerTokens(answer).map((token) => `
+        <span class="answer-slot ${reveal ? 'filled' : ''}">${reveal ? escapeHtml(token) : ''}</span>
+      `).join('')}
+    </div>
+  `;
+}
+
+function drillFeedback(feedback) {
+  return `
+    <div class="feedback ${feedback.type}">
+      <p>${escapeHtml(feedback.text)}</p>
+      ${feedback.type === 'ok' ? `
+        <div class="feedback-actions">
+          <button class="primary-button" type="button" data-action="next-drill">下一题</button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function updateDrillSlots(value) {
+  const typedTokens = answerTokens(value);
+  app.querySelectorAll('.answer-slot').forEach((slot, index) => {
+    const token = typedTokens[index] || '';
+    slot.textContent = token;
+    slot.classList.toggle('filled', Boolean(token));
+  });
 }
 
 function startDaily(limit, lessonId = currentDailyLessonId()) {
@@ -701,6 +960,72 @@ function getStats(lessonId = 'all') {
   };
 }
 
+function getDrillStats() {
+  return {
+    learnedWords: learnedWordKeys().size,
+    learnedSentences: learnedSentenceIds().size,
+  };
+}
+
+function canPracticeWords() {
+  return learnedWordKeys().size > 0;
+}
+
+function canPracticeSentences() {
+  return learnedSentenceIds().size > 0;
+}
+
+function learnedWordKeys() {
+  return new Set(drillProgress.learnedWords);
+}
+
+function learnedSentenceIds() {
+  return new Set(drillProgress.learnedSentences);
+}
+
+function rememberDrillItem(item) {
+  if (item.type === 'word') {
+    const learned = learnedWordKeys();
+    learned.add(item.key);
+    drillProgress.learnedWords = wordPracticeItems
+      .map((word) => word.key)
+      .filter((key) => learned.has(key));
+  } else {
+    const learned = learnedSentenceIds();
+    learned.add(item.id);
+    drillProgress.learnedSentences = sentencePracticeItems
+      .map((sentence) => sentence.id)
+      .filter((id) => learned.has(id));
+  }
+  saveDrillProgress();
+}
+
+function saveDrillProgress() {
+  drillProgress = normalizeDrillProgress(drillProgress);
+  saveJson(DRILL_PROGRESS_KEY, drillProgress);
+}
+
+function emptyDrillProgress() {
+  return { learnedWords: [], learnedSentences: [] };
+}
+
+function normalizeDrillProgress(value) {
+  const progressValue = value && typeof value === 'object' ? value : {};
+  return {
+    learnedWords: Array.isArray(progressValue.learnedWords) ? progressValue.learnedWords.filter(Boolean) : [],
+    learnedSentences: Array.isArray(progressValue.learnedSentences) ? progressValue.learnedSentences.filter(Boolean) : [],
+  };
+}
+
+function drillTitle() {
+  if (!drillSession) return '练习';
+  return `${drillTypeLabel()}${drillSession.mode === 'learn' ? '学习' : '练习'}`;
+}
+
+function drillTypeLabel() {
+  return drillSession?.type === 'sentence' ? '句子' : '单词';
+}
+
 function nextNewLabel(lessonId = 'all') {
   const next = scopedVocabulary(lessonId).find((item) => !progress[item.key] || progress[item.key].status === 'new');
   return next ? `下一个新词：${next.en}（${next.cn || '待补充'}）` : '所有词都已经进入学习记录。';
@@ -832,10 +1157,58 @@ function focusStudyInput() {
   queueMicrotask(() => app.querySelector('[autofocus]')?.focus());
 }
 
+function focusDrillInput() {
+  queueMicrotask(() => app.querySelector('#drill-answer')?.focus());
+}
+
+function focusDrillNext() {
+  queueMicrotask(() => app.querySelector('[data-action="next-drill"]')?.focus());
+}
+
+function handleDrillShortcut(event) {
+  if (event.key !== 'Enter') return;
+  if (drillSession?.feedback?.type !== 'ok') return;
+  const action = event.target?.closest?.('[data-action]');
+  if (action && action.dataset.action !== 'next-drill') return;
+  if (!action && event.target?.closest?.('button, input, textarea, select, a')) return;
+  event.preventDefault();
+  nextDrillItem();
+}
+
+function answerTokens(value) {
+  return String(value || '').trim().split(/\s+/).filter(Boolean);
+}
+
+function launchConfetti() {
+  const layer = document.createElement('div');
+  layer.className = 'confetti-layer';
+  layer.setAttribute('aria-hidden', 'true');
+
+  const colors = ['#d08a61', '#6f8755', '#b78949', '#737d58', '#c97f59', '#fff7ec'];
+
+  for (let index = 0; index < 48; index += 1) {
+    const piece = document.createElement('span');
+    piece.className = 'confetti-piece';
+    piece.style.setProperty('--x', String(Math.round((Math.random() - 0.5) * 720)));
+    piece.style.setProperty('--y', String(Math.round(-120 - Math.random() * 420)));
+    piece.style.setProperty('--r', String(Math.round(Math.random() * 720 - 360)));
+    piece.style.setProperty('--d', `${900 + Math.round(Math.random() * 620)}ms`);
+    piece.style.setProperty('--c', colors[index % colors.length]);
+    piece.style.left = `${18 + Math.random() * 64}%`;
+    piece.style.top = `${48 + Math.random() * 18}%`;
+    layer.appendChild(piece);
+  }
+
+  document.body.appendChild(layer);
+  window.setTimeout(() => layer.remove(), 1700);
+}
+
 function resetProgress() {
   if (!window.confirm('确定清除本机学习进度吗？')) return;
   progress = {};
+  drillProgress = emptyDrillProgress();
   saveJson(STORAGE_KEY, progress);
+  saveJson(DRILL_PROGRESS_KEY, drillProgress);
   renderPractice();
 }
 

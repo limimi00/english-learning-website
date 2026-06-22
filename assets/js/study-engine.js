@@ -4,6 +4,28 @@ const SPELLING_VARIANTS = new Map([
   ['centre', 'center'],
   ['grey', 'gray'],
 ]);
+const GENERATED_SUBJECTS = [
+  { key: 'i', en: 'I', cn: '我', be: 'am' },
+  { key: 'you', en: 'You', cn: '你', be: 'are' },
+  { key: 'she', en: 'She', cn: '她', be: 'is' },
+  { key: 'he', en: 'He', cn: '他', be: 'is' },
+  { key: 'we', en: 'We', cn: '我们', be: 'are' },
+  { key: 'they', en: 'They', cn: '他们', be: 'are' },
+];
+const GENERATED_ACTION_SUBJECTS = GENERATED_SUBJECTS.filter((subject) => ['i', 'you', 'we', 'they'].includes(subject.key));
+const ACTION_START_TOKENS = new Set([
+  'arrive', 'arrived', 'argue', 'book', 'booked', 'call', 'change', 'changed',
+  'check', 'checked', 'come', 'cook', 'cooked', 'cry', 'cried', 'dance', 'do',
+  'draw', 'drink', 'drive', 'drove', 'earn', 'earned', 'eat', 'exercise',
+  'finish', 'finished', 'get', 'give', 'go', 'got', 'had', 'have', 'hear',
+  'help', 'kiss', 'kissed', 'land', 'landed', 'leave', 'like', 'listen',
+  'listened', 'live', 'lived', 'look', 'looked', 'make', 'meet', 'met',
+  'order', 'paint', 'park', 'pay', 'play', 'prefer', 'read', 'relax', 'rent',
+  'rented', 'see', 'sit', 'ski', 'sleep', 'smoke', 'smoked', 'speak', 'spoke',
+  'start', 'started', 'stay', 'stayed', 'study', 'swim', 'take', 'talk',
+  'travel', 'use', 'used', 'wait', 'waited', 'wake', 'walk', 'want', 'wanted',
+  'watch', 'wear', 'went', 'work', 'worked', 'write',
+]);
 
 export function normalizeTermKey(term) {
   const normalized = String(term || '')
@@ -58,6 +80,99 @@ export function buildVocabularyIndex(lessons) {
     });
 
   return Array.from(byKey.values()).sort(sortByLessonOrder);
+}
+
+export function buildWordPracticeItems(lessons) {
+  return buildVocabularyIndex(lessons)
+    .filter((item) => item.cn && item.en)
+    .map((item) => ({
+      id: `word-${item.key}`,
+      key: item.key,
+      type: 'word',
+      cn: item.cn,
+      en: item.en,
+      lessonId: item.sources?.[0] || '',
+      sources: item.sources || [],
+    }));
+}
+
+export function buildGeneratedSentenceItems(lessons) {
+  const orderedLessons = lessons
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const words = buildVocabularyIndex(orderedLessons);
+  const tokenSet = textbookTokenSet(words);
+  const adjectiveItems = words
+    .filter((item) => item.cn && item.en && item.category === 'adjectives')
+    .filter((item) => item.key !== 'favorite');
+  const sentences = [];
+  const seenAnswers = new Set();
+
+  adjectiveItems.forEach((adjective) => {
+    GENERATED_SUBJECTS.forEach((subject) => {
+      const sentence = `${subject.en} ${subject.be} ${adjective.en}.`;
+      const tokens = answerTokenKeys(sentence);
+      if (!tokens.length || !tokens.every((token) => tokenSet.has(token))) return;
+      addGeneratedSentence({
+        id: `generated-sentence-${sentences.length + 1}`,
+        type: 'sentence',
+        cn: `${subject.cn}很${sentenceAdjectiveCn(adjective.cn)}。`,
+        en: sentence,
+        lessonId: adjective.sources?.[0] || '',
+        sourceWordKeys: [subject.key, subject.be, ...answerTokenKeys(adjective.en)],
+        tokens,
+      });
+    });
+  });
+  words
+    .filter((item) => item.cn && item.en)
+    .filter((item) => ACTION_START_TOKENS.has(answerTokenKeys(item.en)[0]))
+    .forEach((action) => {
+      GENERATED_ACTION_SUBJECTS.forEach((subject) => {
+        const sentence = `${subject.en} ${action.en}.`;
+        const tokens = answerTokenKeys(sentence);
+        if (!tokens.length || !tokens.every((token) => tokenSet.has(token))) return;
+        addGeneratedSentence({
+          id: `generated-sentence-${sentences.length + 1}`,
+          type: 'sentence',
+          cn: `${subject.cn}${sentenceActionCn(action.cn)}。`,
+          en: sentence,
+          lessonId: action.sources?.[0] || '',
+          sourceWordKeys: [subject.key, ...answerTokenKeys(action.en)],
+          tokens,
+        });
+      });
+    });
+
+  return sentences;
+
+  function addGeneratedSentence(item) {
+    const key = normalizeAnswer(item.en);
+    if (seenAnswers.has(key)) return;
+    seenAnswers.add(key);
+    sentences.push(item);
+  }
+}
+
+export function buildWordSentencePracticeItems(lessons) {
+  return [...legacyTranslationSentenceItems(lessons), ...buildWordPracticeItems(lessons)];
+}
+
+function legacyTranslationSentenceItems(lessons) {
+  return lessons
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .flatMap((lesson) => (
+      (lesson.translations || [])
+        .filter((item) => item.cn && item.en)
+        .map((item, index) => ({
+          id: `sentence-${lesson.id}-${index}`,
+          type: 'sentence',
+          cn: item.cn,
+          en: item.en,
+          lessonId: lesson.id,
+        }))
+    ));
 }
 
 export function buildDailyPlan({ vocabulary, progress = {}, today = todayKey(), limit = 15, lessonId = 'all' }) {
@@ -195,6 +310,24 @@ function sortByLessonOrder(a, b) {
     (a.firstSeenOrder || 0) - (b.firstSeenOrder || 0) ||
     (a.lessonItemOrder || 0) - (b.lessonItemOrder || 0)
   );
+}
+
+function textbookTokenSet(vocabulary) {
+  return new Set(vocabulary.flatMap((item) => answerTokenKeys(item.en)));
+}
+
+function answerTokenKeys(value) {
+  return normalizeAnswer(value).split(' ').filter(Boolean);
+}
+
+function sentenceAdjectiveCn(value) {
+  const firstMeaning = String(value || '').split('/')[0] || value;
+  return firstMeaning.replace(/的$/, '') || firstMeaning;
+}
+
+function sentenceActionCn(value) {
+  const firstMeaning = String(value || '').split('/')[0] || value;
+  return firstMeaning.replace(/（.*?）/g, '');
 }
 
 function sortByDueThenLesson(progress) {

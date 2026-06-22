@@ -549,6 +549,84 @@ textarea.answer-input {
   }
 }
 
+.word-sentence-panel {
+  padding: 16px;
+}
+
+.word-sentence-card {
+  display: grid;
+  gap: 18px;
+  min-height: 360px;
+  align-content: center;
+  border: 1px solid rgba(232, 207, 181, 0.8);
+  border-radius: var(--organic-card-radius);
+  background:
+    radial-gradient(circle at 16% 12%, rgba(208, 138, 97, 0.16), transparent 30%),
+    rgba(255, 250, 242, 0.84);
+  padding: clamp(18px, 4vw, 34px);
+}
+
+.word-sentence-cn {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: clamp(1.25rem, 3.8vw, 2.05rem);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.answer-slots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 12px;
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+
+.answer-slot {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: clamp(56px, 14vw, 118px);
+  min-height: 46px;
+  padding: 0 8px 8px;
+  border-bottom: 2px solid rgba(122, 102, 87, 0.46);
+  color: var(--soil);
+  font-size: clamp(1.15rem, 4.2vw, 2.15rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.answer-slot.filled {
+  border-bottom-color: var(--clay);
+  color: var(--moss);
+}
+
+.word-sentence-form {
+  width: min(100%, 620px);
+  margin: 4px auto 0;
+}
+
+.confetti-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--c);
+  opacity: 0;
+  transform: translate3d(0, 0, 0) rotate(0deg);
+  animation: confettiBurst var(--d) cubic-bezier(0.17, 0.67, 0.2, 1.02) forwards;
+}
+
 .feedback {
   margin: 12px 0 0;
   padding: 12px;
@@ -730,6 +808,10 @@ textarea.answer-input {
   .study-form > button {
     width: 100%;
   }
+
+  .word-sentence-card {
+    min-height: 330px;
+  }
 }
 
 @keyframes blobBreath {
@@ -774,6 +856,22 @@ textarea.answer-input {
   }
 }
 
+@keyframes confettiBurst {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(0.8);
+  }
+
+  14% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 0) rotate(calc(var(--r) * 1deg)) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -781,5 +879,9 @@ textarea.answer-input {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+  }
+
+  .confetti-piece {
+    display: none;
   }
 }
