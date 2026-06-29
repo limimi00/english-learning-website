@@ -70,6 +70,10 @@ test('vocabulary audio player supports all and multi-part selection', async () =
   assert.match(renderPlaybackScopeOptionsSource, /<input[^>]+type="checkbox"[^>]+data-action="toggle-playback-lesson"|<input[^>]+data-action="toggle-playback-lesson"[^>]+type="checkbox"/);
   assert.match(changeListenerSource, /(?:action\?\.dataset\.action|action\.dataset\.action)[\s\S]*'toggle-playback-lesson'[\s\S]*updatePlaybackLessons\(action\.value, action\.checked\)/);
 
+  assert.match(updatePlaybackLessonsSource, /lessonId\s*===\s*'all'/);
+  assert.match(updatePlaybackLessonsSource, /\bchecked\b/);
+  assert.match(updatePlaybackLessonsSource, /selected\.add\(lessonId\)/);
+  assert.match(updatePlaybackLessonsSource, /selected\.delete\(lessonId\)/);
   assert.match(
     updatePlaybackLessonsSource,
     /if\s*\(\s*(?:!selected\.size|selected\.size\s*===\s*0|selected\.size\s*<\s*1)\s*\)\s*\{[\s\S]*?playback\.lessonIds\s*=\s*\['all'\]|if\s*\(\s*selected\.size\s*\)\s*\{[\s\S]*?\}\s*else\s*\{[\s\S]*?playback\.lessonIds\s*=\s*\['all'\]|playback\.lessonIds\s*=\s*selected\.size\s*\?[\s\S]*?:\s*\['all'\]/
@@ -80,7 +84,7 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
   const phaseSource = sourceSection(appSource, /const PLAYBACK_PHASES = \[/, /\n\];/, 'PLAYBACK_PHASES constant');
   const phaseEntries = Array.from(
-    phaseSource.matchAll(/\{[\s\S]*?field: '(en|cn)'[\s\S]*?lang: '(en-US|zh-CN)'[\s\S]*?\}/g),
+    phaseSource.matchAll(/\{[\s\S]*?field: '([^']+)'[\s\S]*?lang: '([^']+)'[\s\S]*?\}/g),
     ([, field, lang]) => ({ field, lang })
   );
   const navClickSource = sourceSection(appSource, /navButtons\.forEach\(\(button\) => \{/, /\n\}\);\n\napp\.addEventListener\('click'/, 'bottom navigation click handler');
@@ -99,7 +103,7 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
   assert.match(appClickSource, /if \(name === 'open-wrongbook'\) \{[\s\S]*navigate\('wrongbook'\);/);
   assert.match(appClickSource, /if \(name === 'lesson'\) \{[\s\S]*navigate\('lesson-detail'\);/);
   assert.match(appClickSource, /if \(name === 'back'\) \{[\s\S]*navigate\(action\.dataset\.route \|\| 'home'\);/);
-  assert.doesNotMatch(appClickSource, /\broute\s*=/);
+  assert.doesNotMatch(appClickSource, /\broute\s*=(?!=)/);
   assert.match(navigateSource, /nextRoute !== 'vocabulary'/);
   assert.match(navigateSource, /stopVocabularyPlayback/);
 });
