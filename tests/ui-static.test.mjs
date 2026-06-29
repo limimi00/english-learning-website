@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-function sourceSection(source, startPattern, endPattern) {
+function sourceSection(source, startPattern, endPattern, label = 'source section') {
   const start = source.search(startPattern);
-  assert.notEqual(start, -1, `Expected source to contain ${startPattern}`);
+  assert.notEqual(start, -1, `Expected ${label} to be present`);
 
   const remaining = source.slice(start);
   const end = remaining.search(endPattern);
-  assert.notEqual(end, -1, `Expected source section ${startPattern} to end before ${endPattern}`);
+  assert.notEqual(end, -1, `Expected ${label} to end before ${endPattern}`);
 
   return remaining.slice(0, end);
 }
@@ -45,27 +45,30 @@ test('vocabulary page reports filtered and total word counts', async () => {
 test('vocabulary page renders audio playback controls for deduplicated words', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
   const cssSource = await readFile(new URL('../assets/css/style.css', import.meta.url), 'utf8');
-  const renderVocabularySource = sourceSection(appSource, /function renderVocabulary\(\) \{/, /\nfunction renderPractice\(\)/);
+  const renderVocabularySource = sourceSection(appSource, /function renderVocabulary\(\) \{/, /\nfunction renderPractice\(\)/, 'renderVocabulary() function');
 
   assert.match(renderVocabularySource, /const playbackItems = buildVocabularyPlaybackItems\(vocabulary, playback\.lessonIds\);/);
   assert.match(renderVocabularySource, /\$\{renderVocabularyPlayer\(playbackItems\)\}/);
-  assert.match(appSource, /function renderVocabularyPlayer\(items\)/);
-  assert.match(appSource, /class="audio-player/);
-  assert.match(appSource, /data-action="play-vocabulary-audio"/);
-  assert.match(appSource, /data-action="pause-vocabulary-audio"/);
-  assert.match(appSource, /data-action="previous-vocabulary-word"/);
-  assert.match(appSource, /data-action="next-vocabulary-word"/);
-  assert.match(appSource, /data-action="toggle-vocabulary-loop"/);
+  const renderVocabularyPlayerSource = sourceSection(appSource, /function renderVocabularyPlayer\(items\) \{/, /\nfunction /, 'renderVocabularyPlayer(items) function');
+
+  assert.match(renderVocabularyPlayerSource, /class="audio-player/);
+  assert.match(renderVocabularyPlayerSource, /data-action="play-vocabulary-audio"/);
+  assert.match(renderVocabularyPlayerSource, /data-action="pause-vocabulary-audio"/);
+  assert.match(renderVocabularyPlayerSource, /data-action="previous-vocabulary-word"/);
+  assert.match(renderVocabularyPlayerSource, /data-action="next-vocabulary-word"/);
+  assert.match(renderVocabularyPlayerSource, /data-action="toggle-vocabulary-loop"/);
   assert.match(cssSource, /\.audio-player\s*\{/);
 });
 
 test('vocabulary audio player supports all and multi-part selection', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
+  const renderPlaybackScopeOptionsSource = sourceSection(appSource, /function renderPlaybackScopeOptions\(\) \{/, /\nfunction /, 'renderPlaybackScopeOptions() function');
+  const changeListenerSource = sourceSection(appSource, /app\.addEventListener\('change', \(event\) => \{/, /\n\}\);/, 'change event listener');
+  const updatePlaybackLessonsSource = sourceSection(appSource, /function updatePlaybackLessons\([^)]*\) \{/, /\nfunction /, 'updatePlaybackLessons(...) function');
 
   assert.match(appSource, /let playback = \{[\s\S]*lessonIds: \['all'\]/);
-  assert.match(appSource, /<input[^>]+type="checkbox"[^>]+data-action="toggle-playback-lesson"|<input[^>]+data-action="toggle-playback-lesson"[^>]+type="checkbox"/);
-  assert.match(appSource, /updatePlaybackLessons\(action\.value, action\.checked\)/);
-  const updatePlaybackLessonsSource = sourceSection(appSource, /function updatePlaybackLessons\([^)]*\) \{/, /\nfunction /);
+  assert.match(renderPlaybackScopeOptionsSource, /<input[^>]+type="checkbox"[^>]+data-action="toggle-playback-lesson"|<input[^>]+data-action="toggle-playback-lesson"[^>]+type="checkbox"/);
+  assert.match(changeListenerSource, /(?:action\?\.dataset\.action|action\.dataset\.action)[\s\S]*'toggle-playback-lesson'[\s\S]*updatePlaybackLessons\(action\.value, action\.checked\)/);
 
   assert.match(
     updatePlaybackLessonsSource,
@@ -75,14 +78,14 @@ test('vocabulary audio player supports all and multi-part selection', async () =
 
 test('vocabulary audio player speaks English Chinese English and stops on navigation', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
-  const phaseSource = sourceSection(appSource, /const PLAYBACK_PHASES = \[/, /\n\];/);
+  const phaseSource = sourceSection(appSource, /const PLAYBACK_PHASES = \[/, /\n\];/, 'PLAYBACK_PHASES constant');
   const phaseEntries = Array.from(
     phaseSource.matchAll(/\{[\s\S]*?field: '(en|cn)'[\s\S]*?lang: '(en-US|zh-CN)'[\s\S]*?\}/g),
     ([, field, lang]) => ({ field, lang })
   );
-  const navClickSource = sourceSection(appSource, /navButtons\.forEach\(\(button\) => \{/, /\n\}\);\n\napp\.addEventListener\('click'/);
-  const backActionSource = sourceSection(appSource, /if \(name === 'back'\) \{/, /\n\s*\}\n\s*setActiveNav\(\);/);
-  const navigateSource = sourceSection(appSource, /function navigate\(nextRoute\) \{/, /\nfunction /);
+  const navClickSource = sourceSection(appSource, /navButtons\.forEach\(\(button\) => \{/, /\n\}\);\n\napp\.addEventListener\('click'/, 'bottom navigation click handler');
+  const appClickSource = sourceSection(appSource, /app\.addEventListener\('click', \(event\) => \{/, /\n\}\);\n\napp\.addEventListener\('keydown'/, 'app click event listener');
+  const navigateSource = sourceSection(appSource, /function navigate\(nextRoute\) \{/, /\nfunction /, 'navigate(nextRoute) function');
 
   assert.deepEqual(phaseEntries, [
     { field: 'en', lang: 'en-US' },
@@ -92,9 +95,13 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
   assert.match(appSource, /function stopVocabularyPlayback\(/);
   assert.match(navClickSource, /navigate\(button\.dataset\.route\);/);
   assert.doesNotMatch(navClickSource, /route\s*=\s*button\.dataset\.route/);
-  assert.match(backActionSource, /navigate\(action\.dataset\.route \|\| 'home'\);/);
-  assert.doesNotMatch(backActionSource, /route\s*=/);
-  assert.match(navigateSource, /if \(nextRoute !== 'vocabulary'\) stopVocabularyPlayback\(\);/);
+  assert.match(appClickSource, /if \(name === 'switch-all-lessons'\) \{[\s\S]*navigate\('home'\);/);
+  assert.match(appClickSource, /if \(name === 'open-wrongbook'\) \{[\s\S]*navigate\('wrongbook'\);/);
+  assert.match(appClickSource, /if \(name === 'lesson'\) \{[\s\S]*navigate\('lesson-detail'\);/);
+  assert.match(appClickSource, /if \(name === 'back'\) \{[\s\S]*navigate\(action\.dataset\.route \|\| 'home'\);/);
+  assert.doesNotMatch(appClickSource, /\broute\s*=/);
+  assert.match(navigateSource, /nextRoute !== 'vocabulary'/);
+  assert.match(navigateSource, /stopVocabularyPlayback/);
 });
 
 test('study answers advance automatically when correct and only pause on errors', async () => {
