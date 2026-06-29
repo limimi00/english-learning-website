@@ -52,7 +52,7 @@ Behavior:
 
 - Selecting `全部` plays every deduplicated vocabulary item.
 - Selecting one or more Parts plays every deduplicated vocabulary item whose `sources` includes at least one selected Part.
-- If a selected Part has a lesson-specific meaning for a repeated English term, the displayed Chinese meaning follows that Part when only one Part is selected. With multiple Parts selected, the player uses the canonical deduplicated meaning from the first source.
+- If a selected Part has a lesson-specific meaning for a repeated English term, the displayed Chinese meaning follows that Part when only one Part is selected. With multiple Parts selected, the player uses the first selected matching Part's source-specific details.
 - Pressing Play starts at the currently selected item. If there is no current item, it starts at the first item in the filtered player queue.
 - Pressing Pause stops the current utterance and preserves the current item index.
 - Pressing Next stops current speech and advances to the next word.

@@ -157,6 +157,38 @@ test('buildVocabularyPlaybackItems unions multiple textbooks without duplicates'
   assert.deepEqual(items.map((item) => item.key), ['teacher', 'coffee', 'cinema']);
 });
 
+test('buildVocabularyPlaybackItems uses first selected source details for repeated words in multi-select', () => {
+  const index = buildVocabularyIndex([
+    {
+      id: 'part-1',
+      order: 1,
+      vocabulary: [
+        { en: 'am', cn: '是', category: 'grammar' },
+      ],
+    },
+    {
+      id: 'part-2',
+      order: 2,
+      vocabulary: [
+        { en: 'am', cn: '上午', category: 'time' },
+      ],
+    },
+    {
+      id: 'part-3',
+      order: 3,
+      vocabulary: [
+        { en: 'am', cn: '在', category: 'phrases' },
+      ],
+    },
+  ]);
+
+  const items = buildVocabularyPlaybackItems(index, ['part-2', 'part-3']);
+
+  assert.deepEqual(items.map((item) => item.key), ['am']);
+  assert.equal(items[0].cn, '上午');
+  assert.equal(items[0].category, 'time');
+});
+
 test('buildVocabularyPlaybackItems treats empty selection as all scope', () => {
   const index = buildVocabularyIndex([
     {

@@ -245,6 +245,10 @@ export function buildVocabularyPlaybackItems(vocabulary, lessonIds = ['all']) {
 
   return vocabulary
     .filter((item) => item.sources?.some((sourceId) => selected.has(sourceId)))
+    .map((item) => {
+      const sourceId = selectedIds.find((lessonId) => item.sources?.includes(lessonId));
+      return sourceId ? applySourceDetails(item, sourceId) : item;
+    })
     .sort(sortByLessonOrder);
 }
 
