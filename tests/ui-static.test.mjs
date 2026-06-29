@@ -2,6 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
+function sourceSection(source, startPattern, endPattern) {
+  const start = source.search(startPattern);
+  assert.notEqual(start, -1, `Expected source to contain ${startPattern}`);
+
+  const remaining = source.slice(start);
+  const end = remaining.search(endPattern);
+  assert.notEqual(end, -1, `Expected source section ${startPattern} to end before ${endPattern}`);
+
+  return remaining.slice(0, end);
+}
+
 test('lesson cards are clickable, focusable controls', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
 
@@ -34,8 +45,10 @@ test('vocabulary page reports filtered and total word counts', async () => {
 test('vocabulary page renders audio playback controls for deduplicated words', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
   const cssSource = await readFile(new URL('../assets/css/style.css', import.meta.url), 'utf8');
+  const renderVocabularySource = sourceSection(appSource, /function renderVocabulary\(\) \{/, /\nfunction renderPractice\(\)/);
 
-  assert.match(appSource, /buildVocabularyPlaybackItems\(vocabulary, playback\.lessonIds\)/);
+  assert.match(renderVocabularySource, /const playbackItems = buildVocabularyPlaybackItems\(vocabulary, playback\.lessonIds\);/);
+  assert.match(renderVocabularySource, /\$\{renderVocabularyPlayer\(playbackItems\)\}/);
   assert.match(appSource, /function renderVocabularyPlayer\(items\)/);
   assert.match(appSource, /class="audio-player/);
   assert.match(appSource, /data-action="play-vocabulary-audio"/);
@@ -50,21 +63,38 @@ test('vocabulary audio player supports all and multi-part selection', async () =
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
 
   assert.match(appSource, /let playback = \{[\s\S]*lessonIds: \['all'\]/);
-  assert.match(appSource, /data-action="toggle-playback-lesson"/);
-  assert.match(appSource, /type="checkbox"/);
+  assert.match(appSource, /<input[^>]+type="checkbox"[^>]+data-action="toggle-playback-lesson"|<input[^>]+data-action="toggle-playback-lesson"[^>]+type="checkbox"/);
   assert.match(appSource, /updatePlaybackLessons\(action\.value, action\.checked\)/);
-  assert.match(appSource, /playback\.lessonIds = selected\.size \? Array\.from\(selected\) : \['all'\]/);
+  const updatePlaybackLessonsSource = sourceSection(appSource, /function updatePlaybackLessons\([^)]*\) \{/, /\nfunction /);
+
+  assert.match(
+    updatePlaybackLessonsSource,
+    /if\s*\(\s*(?:!selected\.size|selected\.size\s*===\s*0|selected\.size\s*<\s*1)\s*\)\s*\{[\s\S]*?playback\.lessonIds\s*=\s*\['all'\]|if\s*\(\s*selected\.size\s*\)\s*\{[\s\S]*?\}\s*else\s*\{[\s\S]*?playback\.lessonIds\s*=\s*\['all'\]|playback\.lessonIds\s*=\s*selected\.size\s*\?[\s\S]*?:\s*\['all'\]/
+  );
 });
 
 test('vocabulary audio player speaks English Chinese English and stops on navigation', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
+  const phaseSource = sourceSection(appSource, /const PLAYBACK_PHASES = \[/, /\n\];/);
+  const phaseEntries = Array.from(
+    phaseSource.matchAll(/\{[\s\S]*?field: '(en|cn)'[\s\S]*?lang: '(en-US|zh-CN)'[\s\S]*?\}/g),
+    ([, field, lang]) => ({ field, lang })
+  );
+  const navClickSource = sourceSection(appSource, /navButtons\.forEach\(\(button\) => \{/, /\n\}\);\n\napp\.addEventListener\('click'/);
+  const backActionSource = sourceSection(appSource, /if \(name === 'back'\) \{/, /\n\s*\}\n\s*setActiveNav\(\);/);
+  const navigateSource = sourceSection(appSource, /function navigate\(nextRoute\) \{/, /\nfunction /);
 
-  assert.match(appSource, /const PLAYBACK_PHASES = \[[\s\S]*field: 'en'[\s\S]*field: 'cn'[\s\S]*field: 'en'/);
-  assert.match(appSource, /lang: 'en-US'/);
-  assert.match(appSource, /lang: 'zh-CN'/);
+  assert.deepEqual(phaseEntries, [
+    { field: 'en', lang: 'en-US' },
+    { field: 'cn', lang: 'zh-CN' },
+    { field: 'en', lang: 'en-US' },
+  ]);
   assert.match(appSource, /function stopVocabularyPlayback\(/);
-  assert.match(appSource, /function navigate\(nextRoute\)/);
-  assert.match(appSource, /if \(nextRoute !== 'vocabulary'\) stopVocabularyPlayback/);
+  assert.match(navClickSource, /navigate\(button\.dataset\.route\);/);
+  assert.doesNotMatch(navClickSource, /route\s*=\s*button\.dataset\.route/);
+  assert.match(backActionSource, /navigate\(action\.dataset\.route \|\| 'home'\);/);
+  assert.doesNotMatch(backActionSource, /route\s*=/);
+  assert.match(navigateSource, /if \(nextRoute !== 'vocabulary'\) stopVocabularyPlayback\(\);/);
 });
 
 test('study answers advance automatically when correct and only pause on errors', async () => {
