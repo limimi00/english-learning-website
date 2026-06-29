@@ -225,6 +225,29 @@ export function buildDailyPlan({ vocabulary, progress = {}, today = todayKey(), 
   return { date: today, limit: remaining, lessonId: scopeId, totalAvailable: scopedVocabulary.length, counts, items: selected };
 }
 
+export function buildVocabularyPlaybackItems(vocabulary, lessonIds = ['all']) {
+  const selectedIds = Array.isArray(lessonIds)
+    ? lessonIds.filter(Boolean)
+    : ['all'];
+  const selected = new Set(selectedIds);
+
+  if (!selected.size || selected.has('all')) {
+    return vocabulary.slice().sort(sortByLessonOrder);
+  }
+
+  if (selected.size === 1) {
+    const [lessonId] = Array.from(selected);
+    return vocabulary
+      .filter((item) => item.sources?.includes(lessonId))
+      .map((item) => applySourceDetails(item, lessonId))
+      .sort(sortByLessonOrder);
+  }
+
+  return vocabulary
+    .filter((item) => item.sources?.some((sourceId) => selected.has(sourceId)))
+    .sort(sortByLessonOrder);
+}
+
 export function evaluateWordProgress(current, result) {
   const base = {
     status: 'new',
