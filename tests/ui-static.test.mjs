@@ -76,6 +76,10 @@ test('vocabulary audio player supports all and multi-part selection', async () =
   assert.match(updatePlaybackLessonsSource, /selected\.delete\(lessonId\)/);
   assert.match(
     updatePlaybackLessonsSource,
+    /if\s*\(\s*checked\s*\)\s*(?:\{[\s\S]*?selected\.add\(lessonId\);?[\s\S]*?\}|selected\.add\(lessonId\);?)\s*else\s*(?:\{[\s\S]*?selected\.delete\(lessonId\);?[\s\S]*?\}|selected\.delete\(lessonId\);?)/
+  );
+  assert.match(
+    updatePlaybackLessonsSource,
     /if\s*\(\s*(?:!selected\.size|selected\.size\s*===\s*0|selected\.size\s*<\s*1)\s*\)\s*\{[\s\S]*?playback\.lessonIds\s*=\s*\['all'\]|if\s*\(\s*selected\.size\s*\)\s*\{[\s\S]*?\}\s*else\s*\{[\s\S]*?playback\.lessonIds\s*=\s*\['all'\]|playback\.lessonIds\s*=\s*selected\.size\s*\?[\s\S]*?:\s*\['all'\]/
   );
 });
@@ -83,10 +87,11 @@ test('vocabulary audio player supports all and multi-part selection', async () =
 test('vocabulary audio player speaks English Chinese English and stops on navigation', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
   const phaseSource = sourceSection(appSource, /const PLAYBACK_PHASES = \[/, /\n\];/, 'PLAYBACK_PHASES constant');
-  const phaseEntries = Array.from(
-    phaseSource.matchAll(/\{[\s\S]*?field: '([^']+)'[\s\S]*?lang: '([^']+)'[\s\S]*?\}/g),
-    ([, field, lang]) => ({ field, lang })
-  );
+  const phaseBlocks = Array.from(phaseSource.matchAll(/\{[\s\S]*?\}/g), ([phase]) => phase);
+  const phaseEntries = phaseBlocks.map((phase) => ({
+    field: phase.match(/field: '([^']+)'/)?.[1],
+    lang: phase.match(/lang: '([^']+)'/)?.[1],
+  }));
   const navClickSource = sourceSection(appSource, /navButtons\.forEach\(\(button\) => \{/, /\n\}\);\n\napp\.addEventListener\('click'/, 'bottom navigation click handler');
   const appClickSource = sourceSection(appSource, /app\.addEventListener\('click', \(event\) => \{/, /\n\}\);\n\napp\.addEventListener\('keydown'/, 'app click event listener');
   const navigateSource = sourceSection(appSource, /function navigate\(nextRoute\) \{/, /\nfunction /, 'navigate(nextRoute) function');
@@ -96,6 +101,11 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
     { field: 'cn', lang: 'zh-CN' },
     { field: 'en', lang: 'en-US' },
   ]);
+  const speakPlaybackPhaseSource = sourceSection(appSource, /function speakPlaybackPhase\(token, phaseIndex\) \{/, /\nfunction /, 'speakPlaybackPhase(token, phaseIndex) function');
+
+  assert.match(speakPlaybackPhaseSource, /PLAYBACK_PHASES\[phaseIndex\]/);
+  assert.match(speakPlaybackPhaseSource, /new SpeechSynthesisUtterance/);
+  assert.match(speakPlaybackPhaseSource, /utterance\.lang\s*=\s*phase\.lang/);
   assert.match(appSource, /function stopVocabularyPlayback\(/);
   assert.match(navClickSource, /navigate\(button\.dataset\.route\);/);
   assert.doesNotMatch(navClickSource, /route\s*=\s*button\.dataset\.route/);
