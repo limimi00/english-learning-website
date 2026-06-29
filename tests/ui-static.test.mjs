@@ -73,6 +73,11 @@ test('vocabulary audio player supports all and multi-part selection', async () =
   assert.match(changeListenerSource, /(?:action\?\.dataset\.action|action\.dataset\.action)[\s\S]*'toggle-playback-lesson'[\s\S]*updatePlaybackLessons\(action\.value, action\.checked\)/);
 
   assert.match(updatePlaybackLessonsSource, /lessonId\s*===\s*'all'/);
+  assert.match(updatePlaybackLessonsSource, /if\s*\(\s*lessonId\s*===\s*'all'\s*\)\s*\{[\s\S]*?playback\.lessonIds\s*=\s*\['all'\]/);
+  assert.match(
+    updatePlaybackLessonsSource,
+    /new Set\(\s*playback\.lessonIds\.includes\('all'\)\s*\?\s*\[\]\s*:\s*playback\.lessonIds\s*\)|selected\.delete\('all'\)[\s\S]*selected\.add\(lessonId\)/
+  );
   assert.match(updatePlaybackLessonsSource, /\bchecked\b/);
   assert.match(updatePlaybackLessonsSource, /selected\.add\(lessonId\)/);
   assert.match(updatePlaybackLessonsSource, /selected\.delete\(lessonId\)/);
@@ -97,6 +102,9 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
   const navClickSource = sourceSection(appSource, /navButtons\.forEach\(\(button\) => \{/, /\n\}\);\n\napp\.addEventListener\('click'/, 'bottom navigation click handler');
   const appClickSource = sourceSection(appSource, /app\.addEventListener\('click', \(event\) => \{/, /\n\}\);\n\napp\.addEventListener\('keydown'/, 'app click event listener');
   const navigateSource = sourceSection(appSource, /function navigate\(nextRoute\) \{/, /\nfunction /, 'navigate(nextRoute) function');
+  const appSourceWithoutAllowedRouteAssignments = appSource
+    .replace(navigateSource, '')
+    .replace(/let route = 'home';/, '');
 
   assert.deepEqual(phaseEntries, [
     { field: 'en', lang: 'en-US' },
@@ -120,6 +128,7 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
   assert.match(appClickSource, /if \(name === 'lesson'\) \{[\s\S]*navigate\('lesson-detail'\);/);
   assert.match(appClickSource, /if \(name === 'back'\) \{[\s\S]*navigate\(action\.dataset\.route \|\| 'home'\);/);
   assert.doesNotMatch(appClickSource, /\broute\s*=(?!=)/);
+  assert.doesNotMatch(appSourceWithoutAllowedRouteAssignments, /\broute\s*=(?!=)/);
   assert.match(navigateSource, /nextRoute !== 'vocabulary'/);
   assert.match(navigateSource, /stopVocabularyPlayback/);
 });
