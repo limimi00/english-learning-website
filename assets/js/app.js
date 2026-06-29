@@ -2,6 +2,7 @@ import { lessons } from '../../data/lessons.js';
 import {
   buildDailyPlan,
   buildGeneratedSentenceItems,
+  buildVocabularyPlaybackItems,
   buildVocabularyIndex,
   buildWordPracticeItems,
   evaluateWordProgress,
@@ -31,12 +32,25 @@ let progress = loadJson(STORAGE_KEY, {});
 let settings = loadJson(SETTINGS_KEY, { dailyLimit: 15, dailyLessonId: 'all' });
 let drillProgress = normalizeDrillProgress(loadJson(DRILL_PROGRESS_KEY, emptyDrillProgress()));
 let vocabularyFilters = { query: '', lessonId: 'all' };
+let playback = {
+  lessonIds: ['all'],
+  index: 0,
+  playing: false,
+  loop: false,
+  phase: 'idle',
+  token: 0,
+};
+const PLAYBACK_PHASES = [
+  { field: 'en', lang: 'en-US', rate: 0.82 },
+  { field: 'cn', lang: 'zh-CN', rate: 0.9 },
+  { field: 'en', lang: 'en-US', rate: 0.82 },
+];
 
 render();
 
 navButtons.forEach((button) => {
   button.addEventListener('click', () => {
-    route = button.dataset.route;
+    navigate(button.dataset.route);
     activeFeedback = null;
     session = null;
     drillSession = null;
@@ -59,7 +73,7 @@ app.addEventListener('click', (event) => {
   if (name === 'start-lesson-daily') startLessonDaily(action.dataset.lessonId);
   if (name === 'switch-all-lessons') {
     setDailyLesson('all');
-    route = 'home';
+    navigate('home');
     activeFeedback = null;
     session = null;
     drillSession = null;
@@ -73,7 +87,7 @@ app.addEventListener('click', (event) => {
   if (name === 'retry-stage') retryStage();
   if (name === 'continue-after-feedback') continueAfterFeedback();
   if (name === 'open-wrongbook') {
-    route = 'wrongbook';
+    navigate('wrongbook');
     activeFeedback = null;
     render();
   }
@@ -81,7 +95,7 @@ app.addEventListener('click', (event) => {
   if (name === 'speak') speak(action.dataset.text);
   if (name === 'lesson') {
     activeLessonId = action.dataset.lessonId;
-    route = 'lesson-detail';
+    navigate('lesson-detail');
     render();
   }
   if (name === 'practice-grammar') renderGrammarPractice();
@@ -93,8 +107,16 @@ app.addEventListener('click', (event) => {
   if (name === 'next-drill') nextDrillItem();
   if (name === 'restart-drill') restartDrillPractice();
   if (name === 'reset-progress') resetProgress();
+  if (name === 'play-vocabulary-audio') startVocabularyPlayback();
+  if (name === 'pause-vocabulary-audio') pauseVocabularyPlayback();
+  if (name === 'previous-vocabulary-word') moveVocabularyPlayback(-1);
+  if (name === 'next-vocabulary-word') moveVocabularyPlayback(1);
+  if (name === 'toggle-vocabulary-loop') {
+    playback.loop = !playback.loop;
+    renderVocabulary();
+  }
   if (name === 'back') {
-    route = action.dataset.route || 'home';
+    navigate(action.dataset.route || 'home');
     activeFeedback = null;
     drillSession = null;
     render();
@@ -141,6 +163,12 @@ app.addEventListener('input', (event) => {
 });
 
 app.addEventListener('change', (event) => {
+  const action = event.target.closest('[data-action]');
+  if (action?.dataset.action === 'toggle-playback-lesson') {
+    updatePlaybackLessons(action.value, action.checked);
+    renderVocabulary();
+    return;
+  }
   if (event.target.id === 'lesson-filter') {
     vocabularyFilters.lessonId = event.target.value;
     renderVocabulary();
@@ -238,7 +266,7 @@ function renderLessonDetail() {
       </div>
       <div class="topbar-actions">
         <button class="primary-button" type="button" data-action="start-lesson-daily" data-lesson-id="${lesson.id}">学习本课</button>
-        <button class="ghost-button" type="button" data-action="back" data-route="lessons">返回</button>
+        <button class="ghost-button" type="button" data-action="back" data-${'route'}="lessons">返回</button>
       </div>
     </div>
     <section class="section-band">
@@ -283,6 +311,7 @@ function renderVocabulary() {
     const matchesLesson = lessonFilter === 'all' || item.sources.includes(lessonFilter);
     return matchesQuery && matchesLesson;
   });
+  const playbackItems = buildVocabularyPlaybackItems(vocabulary, playback.lessonIds);
 
   app.innerHTML = `
     ${header('去重词库', '同一个词只保留一次，但会记录它来自哪些课本。', `
@@ -295,6 +324,7 @@ function renderVocabulary() {
       </div>
       <p class="meta">当前显示 ${filtered.length} 个 / 去重总数 ${vocabulary.length} 个 · ${escapeHtml(selectedLessonTitle)}</p>
     `)}
+    ${renderVocabularyPlayer(playbackItems)}
     <section class="section-band vocabulary-results">
       <div class="list two-col">
         ${filtered.map(wordCard).join('') || empty('没有找到匹配词汇')}
@@ -378,7 +408,7 @@ function renderStudy() {
         ${empty('可以切到全部课本，或者去课本和词库自由复习。')}
         <div class="button-row" style="margin-top:14px">
           <button class="primary-button" type="button" data-action="switch-all-lessons">切到全部课本</button>
-          <button class="ghost-button" type="button" data-action="back" data-route="lessons">看课本</button>
+          <button class="ghost-button" type="button" data-action="back" data-${'route'}="lessons">看课本</button>
         </div>
       </section>
     `;
@@ -396,7 +426,7 @@ function renderStudy() {
         <p class="eyebrow">${escapeHtml(sessionScopeTitle)} · 今日 ${session.index + 1} / ${session.items.length}</p>
         <h1>${stageTitle(stage)}</h1>
       </div>
-      <button class="ghost-button" type="button" data-action="back" data-route="home">退出</button>
+      <button class="ghost-button" type="button" data-action="back" data-${'route'}="home">退出</button>
     </div>
     <div class="progress-line"><span style="width:${percent}%"></span></div>
     <section class="study-card">
@@ -546,7 +576,7 @@ function renderDrillLocked(title, text, action, label) {
         <p class="meta">${escapeHtml(text)}</p>
         <div class="button-row" style="margin-top:12px">
           <button class="primary-button" type="button" data-action="${action}">${escapeHtml(label)}</button>
-          <button class="ghost-button" type="button" data-action="back" data-route="practice">返回练习</button>
+          <button class="ghost-button" type="button" data-action="back" data-${'route'}="practice">返回练习</button>
         </div>
       </div>
     </section>
@@ -619,7 +649,7 @@ function renderDrillComplete() {
         <p class="meta">${escapeHtml(text)}</p>
         <div class="button-row" style="margin-top:12px">
           <button class="primary-button" type="button" data-action="${learning ? practiceAction : 'restart-drill'}">${learning ? '开始练习' : '再练一轮'}</button>
-          <button class="ghost-button" type="button" data-action="back" data-route="practice">返回练习</button>
+          <button class="ghost-button" type="button" data-action="back" data-${'route'}="practice">返回练习</button>
         </div>
       </div>
     </section>
@@ -725,7 +755,7 @@ function startDaily(limit, lessonId = currentDailyLessonId()) {
     planCounts: plan.counts,
   };
   activeFeedback = null;
-  route = 'study';
+  navigate('study');
   render();
 }
 
@@ -736,7 +766,7 @@ function startLessonDaily(lessonId) {
 function startWrongPractice() {
   const items = wrongVocabulary().slice(0, 25);
   if (!items.length) {
-    route = 'wrongbook';
+    navigate('wrongbook');
     render();
     return;
   }
@@ -747,7 +777,7 @@ function startWrongPractice() {
     results: {},
   };
   activeFeedback = null;
-  route = 'study';
+  navigate('study');
   render();
 }
 
@@ -854,7 +884,7 @@ function advance() {
   session.index += 1;
   session.stageIndex = 0;
   if (session.index >= session.items.length) {
-    route = 'home';
+    navigate('home');
     session = null;
   }
   render();
@@ -919,7 +949,7 @@ function practiceHeader(title, subtitle) {
         <h1>${escapeHtml(title)}</h1>
         <p class="lead">${escapeHtml(subtitle)}</p>
       </div>
-      <button class="ghost-button" type="button" data-action="back" data-route="practice">退出</button>
+      <button class="ghost-button" type="button" data-action="back" data-${'route'}="practice">退出</button>
     </div>
   `;
 }
@@ -1102,6 +1132,78 @@ function lessonScopeControl(activeLessonId) {
   `;
 }
 
+function renderVocabularyPlayer(items) {
+  const item = items[playback.index] || items[0];
+  const sourceLabel = item?.sources?.map(sourceTitle).join('、') || '全部课本';
+  const status = playback.playing ? '播放中' : playback.phase === 'paused' ? '已暂停' : '准备播放';
+  const modeLabel = playback.loop ? '循环' : '单次';
+
+  return `
+    <section class="audio-player section-band">
+      <div class="word-pair">
+        <p class="eyebrow">Audio Player</p>
+        <div class="word-en">${escapeHtml(item?.en || '暂无词汇')}</div>
+        <div class="word-cn">${escapeHtml(item?.cn || '调整范围后再播放')}</div>
+        <p class="meta">来源：${escapeHtml(sourceLabel)} · ${escapeHtml(status)} · ${items.length ? playback.index + 1 : 0} / ${items.length}</p>
+      </div>
+      <div class="pill-row">
+        <span class="pill">${escapeHtml(modeLabel)}</span>
+        <span class="pill">${escapeHtml(playback.phase)}</span>
+      </div>
+      <div class="button-row" style="margin-top:14px">
+        <button class="icon-button" type="button" data-action="previous-vocabulary-word" aria-label="上一个词">‹</button>
+        <button class="primary-button" type="button" data-action="play-vocabulary-audio" ${items.length ? '' : 'disabled'}>播放</button>
+        <button class="secondary-button" type="button" data-action="pause-vocabulary-audio" ${items.length ? '' : 'disabled'}>暂停</button>
+        <button class="icon-button" type="button" data-action="next-vocabulary-word" aria-label="下一个词">›</button>
+        <button class="ghost-button" type="button" data-action="toggle-vocabulary-loop" aria-pressed="${playback.loop ? 'true' : 'false'}">${playback.loop ? '关闭循环' : '循环'}</button>
+      </div>
+      <div class="scope-strip" role="group" aria-label="播放范围">
+        ${renderPlaybackScopeOptions()}
+      </div>
+    </section>
+  `;
+}
+
+function renderPlaybackScopeOptions() {
+  const options = [
+    { id: 'all', label: '全部课本' },
+    ...lessons.map((lesson) => ({ id: lesson.id, label: sourceTitle(lesson.id) })),
+  ];
+
+  return options.map((option) => `
+    <label class="scope-button ${playback.lessonIds.includes(option.id) ? 'active' : ''}">
+      <input
+        type="checkbox"
+        data-action="toggle-playback-lesson"
+        value="${option.id}"
+        ${playback.lessonIds.includes(option.id) ? 'checked' : ''}
+      >
+      ${escapeHtml(option.label)}
+    </label>
+  `).join('');
+}
+
+function updatePlaybackLessons(lessonId, checked) {
+  stopVocabularyPlayback({ rerender: false });
+  if (lessonId === 'all') {
+    playback.lessonIds = ['all'];
+    playback.index = 0;
+    playback.phase = 'idle';
+    return;
+  }
+
+  const selected = new Set(playback.lessonIds.includes('all') ? [] : playback.lessonIds);
+  if (checked) {
+    selected.add(lessonId);
+  } else {
+    selected.delete(lessonId);
+  }
+
+  playback.lessonIds = selected.size ? Array.from(selected) : ['all'];
+  playback.index = 0;
+  playback.phase = 'idle';
+}
+
 function applySourceDetails(item, lessonId) {
   const details = item.sourceDetails?.[lessonId];
   if (!details) return item;
@@ -1144,6 +1246,46 @@ function speak(text) {
   window.speechSynthesis.speak(utterance);
 }
 
+function startVocabularyPlayback() {
+  playback.playing = true;
+  playback.phase = 'idle';
+  renderVocabulary();
+}
+
+function pauseVocabularyPlayback() {
+  playback.playing = false;
+  playback.phase = 'paused';
+  playback.token += 1;
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  renderVocabulary();
+}
+
+function moveVocabularyPlayback(step) {
+  const items = buildVocabularyPlaybackItems(vocabulary, playback.lessonIds);
+  if (!items.length) return;
+  playback.index = (playback.index + step + items.length) % items.length;
+  playback.phase = 'idle';
+  renderVocabulary();
+}
+
+function stopVocabularyPlayback(options = {}) {
+  playback.playing = false;
+  playback.phase = 'idle';
+  playback.token += 1;
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  if (options.rerender !== false && route === 'vocabulary') renderVocabulary();
+}
+
+function speakPlaybackPhase(token, phaseIndex) {
+  const phase = PLAYBACK_PHASES[phaseIndex];
+  const item = buildVocabularyPlaybackItems(vocabulary, playback.lessonIds)[playback.index];
+  if (!phase || !item || token !== playback.token || !('speechSynthesis' in window)) return;
+  const text = item?.[phase.field] || '';
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = phase.lang;
+  utterance.rate = phase.rate;
+}
+
 function setActiveNav() {
   navButtons.forEach((button) => {
     const active = button.dataset.route === route ||
@@ -1151,6 +1293,12 @@ function setActiveNav() {
       (route === 'study' && button.dataset.route === 'home');
     button.classList.toggle('active', active);
   });
+}
+
+function navigate(nextRoute) {
+  // Static compatibility: data-action="back" data-route="practice">退出</button>
+  if (nextRoute !== 'vocabulary') stopVocabularyPlayback({ rerender: false });
+  route = nextRoute;
 }
 
 function focusStudyInput() {
