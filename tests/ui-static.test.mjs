@@ -46,7 +46,9 @@ test('vocabulary page renders audio playback controls for deduplicated words', a
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
   const cssSource = await readFile(new URL('../assets/css/style.css', import.meta.url), 'utf8');
   const renderVocabularySource = sourceSection(appSource, /function renderVocabulary\(\) \{/, /\nfunction renderPractice\(\)/, 'renderVocabulary() function');
+  const renderVocabularyBodySource = renderVocabularySource.replace(/^function renderVocabulary\(\) \{\n?/, '');
 
+  assert.doesNotMatch(renderVocabularyBodySource, /^\s*function\s+\w+\s*\(/m);
   assert.match(renderVocabularySource, /const playbackItems = buildVocabularyPlaybackItems\(vocabulary, playback\.lessonIds\);/);
   assert.match(renderVocabularySource, /\$\{renderVocabularyPlayer\(playbackItems\)\}/);
   const renderVocabularyPlayerSource = sourceSection(appSource, /function renderVocabularyPlayer\(items\) \{/, /\nfunction /, 'renderVocabularyPlayer(items) function');
@@ -105,6 +107,10 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
 
   assert.match(speakPlaybackPhaseSource, /PLAYBACK_PHASES\[phaseIndex\]/);
   assert.match(speakPlaybackPhaseSource, /new SpeechSynthesisUtterance/);
+  assert.match(
+    speakPlaybackPhaseSource,
+    /item(?:\?\.)?\[\s*phase\.field\s*\]|phase\.field\s*===\s*'cn'[\s\S]*\?[\s\S]*item\.cn[\s\S]*:[\s\S]*item\.en|phase\.field\s*===\s*'en'[\s\S]*\?[\s\S]*item\.en[\s\S]*:[\s\S]*item\.cn/
+  );
   assert.match(speakPlaybackPhaseSource, /utterance\.lang\s*=\s*phase\.lang/);
   assert.match(appSource, /function stopVocabularyPlayback\(/);
   assert.match(navClickSource, /navigate\(button\.dataset\.route\);/);
