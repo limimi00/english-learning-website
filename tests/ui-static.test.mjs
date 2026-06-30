@@ -127,8 +127,8 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
   assert.match(appClickSource, /if \(name === 'open-wrongbook'\) \{[\s\S]*navigate\('wrongbook'\);/);
   assert.match(appClickSource, /if \(name === 'lesson'\) \{[\s\S]*navigate\('lesson-detail'\);/);
   assert.match(appClickSource, /if \(name === 'back'\) \{[\s\S]*navigate\(action\.dataset\.route \|\| 'home'\);/);
-  assert.doesNotMatch(appClickSource, /\broute\s*=(?!=)/);
-  assert.doesNotMatch(appSourceWithoutAllowedRouteAssignments, /\broute\s*=(?!=)/);
+  assert.doesNotMatch(appClickSource, /(^|[^\w-])route\s*=(?!=)/);
+  assert.doesNotMatch(appSourceWithoutAllowedRouteAssignments, /(^|[^\w-])route\s*=(?!=)/);
   assert.match(navigateSource, /nextRoute !== 'vocabulary'/);
   assert.match(navigateSource, /stopVocabularyPlayback/);
 });

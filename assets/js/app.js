@@ -266,7 +266,7 @@ function renderLessonDetail() {
       </div>
       <div class="topbar-actions">
         <button class="primary-button" type="button" data-action="start-lesson-daily" data-lesson-id="${lesson.id}">学习本课</button>
-        <button class="ghost-button" type="button" data-action="back" data-${'route'}="lessons">返回</button>
+        <button class="ghost-button" type="button" data-action="back" data-route="lessons">返回</button>
       </div>
     </div>
     <section class="section-band">
@@ -408,7 +408,7 @@ function renderStudy() {
         ${empty('可以切到全部课本，或者去课本和词库自由复习。')}
         <div class="button-row" style="margin-top:14px">
           <button class="primary-button" type="button" data-action="switch-all-lessons">切到全部课本</button>
-          <button class="ghost-button" type="button" data-action="back" data-${'route'}="lessons">看课本</button>
+          <button class="ghost-button" type="button" data-action="back" data-route="lessons">看课本</button>
         </div>
       </section>
     `;
@@ -426,7 +426,7 @@ function renderStudy() {
         <p class="eyebrow">${escapeHtml(sessionScopeTitle)} · 今日 ${session.index + 1} / ${session.items.length}</p>
         <h1>${stageTitle(stage)}</h1>
       </div>
-      <button class="ghost-button" type="button" data-action="back" data-${'route'}="home">退出</button>
+      <button class="ghost-button" type="button" data-action="back" data-route="home">退出</button>
     </div>
     <div class="progress-line"><span style="width:${percent}%"></span></div>
     <section class="study-card">
@@ -576,7 +576,7 @@ function renderDrillLocked(title, text, action, label) {
         <p class="meta">${escapeHtml(text)}</p>
         <div class="button-row" style="margin-top:12px">
           <button class="primary-button" type="button" data-action="${action}">${escapeHtml(label)}</button>
-          <button class="ghost-button" type="button" data-action="back" data-${'route'}="practice">返回练习</button>
+          <button class="ghost-button" type="button" data-action="back" data-route="practice">返回练习</button>
         </div>
       </div>
     </section>
@@ -649,7 +649,7 @@ function renderDrillComplete() {
         <p class="meta">${escapeHtml(text)}</p>
         <div class="button-row" style="margin-top:12px">
           <button class="primary-button" type="button" data-action="${learning ? practiceAction : 'restart-drill'}">${learning ? '开始练习' : '再练一轮'}</button>
-          <button class="ghost-button" type="button" data-action="back" data-${'route'}="practice">返回练习</button>
+          <button class="ghost-button" type="button" data-action="back" data-route="practice">返回练习</button>
         </div>
       </div>
     </section>
@@ -949,7 +949,7 @@ function practiceHeader(title, subtitle) {
         <h1>${escapeHtml(title)}</h1>
         <p class="lead">${escapeHtml(subtitle)}</p>
       </div>
-      <button class="ghost-button" type="button" data-action="back" data-${'route'}="practice">退出</button>
+      <button class="ghost-button" type="button" data-action="back" data-route="practice">退出</button>
     </div>
   `;
 }
@@ -1276,16 +1276,6 @@ function stopVocabularyPlayback(options = {}) {
   if (options.rerender !== false && route === 'vocabulary') renderVocabulary();
 }
 
-function speakPlaybackPhase(token, phaseIndex) {
-  const phase = PLAYBACK_PHASES[phaseIndex];
-  const item = buildVocabularyPlaybackItems(vocabulary, playback.lessonIds)[playback.index];
-  if (!phase || !item || token !== playback.token || !('speechSynthesis' in window)) return;
-  const text = item?.[phase.field] || '';
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = phase.lang;
-  utterance.rate = phase.rate;
-}
-
 function setActiveNav() {
   navButtons.forEach((button) => {
     const active = button.dataset.route === route ||
@@ -1296,7 +1286,6 @@ function setActiveNav() {
 }
 
 function navigate(nextRoute) {
-  // Static compatibility: data-action="back" data-route="practice">退出</button>
   if (nextRoute !== 'vocabulary') stopVocabularyPlayback({ rerender: false });
   route = nextRoute;
 }
