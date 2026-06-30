@@ -164,6 +164,80 @@ button:disabled {
   margin-top: 0;
 }
 
+.audio-player {
+  display: grid;
+  gap: 14px;
+}
+
+.audio-player-copy h2 {
+  margin-bottom: 6px;
+}
+
+.playback-scope {
+  display: flex;
+  gap: 8px;
+  margin: 0 -2px;
+  padding: 2px 2px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.playback-scope::-webkit-scrollbar {
+  display: none;
+}
+
+.check-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(156, 103, 71, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 250, 242, 0.68);
+  color: var(--soil);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.check-pill input {
+  accent-color: var(--clay);
+}
+
+.audio-now {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(232, 207, 181, 0.72);
+  border-radius: 24px 18px 28px 20px / 18px 26px 20px 28px;
+  background: rgba(247, 231, 207, 0.72);
+}
+
+.audio-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.audio-controls .primary-button,
+.audio-controls .secondary-button,
+.audio-controls .ghost-button {
+  min-width: 96px;
+  padding: 0 14px;
+}
+
+.active-toggle {
+  border-color: rgba(208, 138, 97, 0.46);
+  background: rgba(208, 138, 97, 0.16);
+  color: var(--earth);
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: var(--earth);
@@ -807,6 +881,19 @@ textarea.answer-input {
 
   .study-form > button {
     width: 100%;
+  }
+
+  .audio-now {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .audio-controls {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 44px;
+  }
+
+  .audio-controls .ghost-button {
+    grid-column: 1 / -1;
   }
 
   .word-sentence-card {
