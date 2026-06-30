@@ -1133,54 +1133,63 @@ function lessonScopeControl(activeLessonId) {
 }
 
 function renderVocabularyPlayer(items) {
-  const item = items[playback.index] || items[0];
-  const sourceLabel = item?.sources?.map(sourceTitle).join('、') || '全部课本';
-  const status = playback.playing ? '播放中' : playback.phase === 'paused' ? '已暂停' : '准备播放';
-  const modeLabel = playback.loop ? '循环' : '单次';
+  const supported = canSpeak();
+  const current = items[playback.index] || items[0] || null;
+  const disabled = !supported || !items.length;
+  const status = current ? `${playback.index + 1} / ${items.length}` : `0 / ${items.length}`;
+  const sourceLabel = current?.sources?.length ? current.sources.map(sourceTitle).join('、') : '暂无来源';
 
   return `
     <section class="audio-player section-band">
-      <div class="word-pair">
-        <p class="eyebrow">Audio Player</p>
-        <div class="word-en">${escapeHtml(item?.en || '暂无词汇')}</div>
-        <div class="word-cn">${escapeHtml(item?.cn || '调整范围后再播放')}</div>
-        <p class="meta">来源：${escapeHtml(sourceLabel)} · ${escapeHtml(status)} · ${items.length ? playback.index + 1 : 0} / ${items.length}</p>
+      <div class="audio-player-copy">
+        <p class="eyebrow">Audio</p>
+        <h2>在线播放</h2>
+        <p class="meta">按去重词朗读：英文、中文、英文。</p>
       </div>
-      <div class="pill-row">
-        <span class="pill">${escapeHtml(modeLabel)}</span>
-        <span class="pill">${escapeHtml(playback.phase)}</span>
+      ${renderPlaybackScopeOptions()}
+      <div class="audio-now">
+        <div>
+          <div class="word-en">${escapeHtml(current?.en || '暂无词汇')}</div>
+          <div class="word-cn">${escapeHtml(current?.cn || '中文释义待补充')}</div>
+          <p class="meta">${escapeHtml(sourceLabel)} · ${escapeHtml(status)}</p>
+        </div>
+        <span class="pill">${playback.loop ? '循环' : '单轮'}</span>
       </div>
-      <div class="button-row" style="margin-top:14px">
-        <button class="icon-button" type="button" data-action="previous-vocabulary-word" aria-label="上一个词">‹</button>
-        <button class="primary-button" type="button" data-action="play-vocabulary-audio" ${items.length ? '' : 'disabled'}>播放</button>
-        <button class="secondary-button" type="button" data-action="pause-vocabulary-audio" ${items.length ? '' : 'disabled'}>暂停</button>
-        <button class="icon-button" type="button" data-action="next-vocabulary-word" aria-label="下一个词">›</button>
-        <button class="ghost-button" type="button" data-action="toggle-vocabulary-loop" aria-pressed="${playback.loop ? 'true' : 'false'}">${playback.loop ? '关闭循环' : '循环'}</button>
-      </div>
-      <div class="scope-strip" role="group" aria-label="播放范围">
-        ${renderPlaybackScopeOptions()}
+      ${supported ? '' : '<p class="feedback bad">当前浏览器不支持语音朗读。</p>'}
+      <div class="audio-controls" role="group" aria-label="播放控制">
+        <button class="icon-button" type="button" data-action="previous-vocabulary-word" ${disabled ? 'disabled' : ''} aria-label="上一个词">‹</button>
+        <button class="primary-button" type="button" data-action="play-vocabulary-audio" ${disabled || playback.playing ? 'disabled' : ''}>播放</button>
+        <button class="secondary-button" type="button" data-action="pause-vocabulary-audio" ${disabled || !playback.playing ? 'disabled' : ''}>暂停</button>
+        <button class="icon-button" type="button" data-action="next-vocabulary-word" ${disabled ? 'disabled' : ''} aria-label="下一个词">›</button>
+        <button class="ghost-button ${playback.loop ? 'active-toggle' : ''}" type="button" data-action="toggle-vocabulary-loop" aria-pressed="${playback.loop ? 'true' : 'false'}">循环</button>
       </div>
     </section>
   `;
 }
 
 function renderPlaybackScopeOptions() {
+  const selected = new Set(playback.lessonIds);
+  const allSelected = selected.has('all');
   const options = [
     { id: 'all', label: '全部课本' },
     ...lessons.map((lesson) => ({ id: lesson.id, label: sourceTitle(lesson.id) })),
   ];
 
-  return options.map((option) => `
-    <label class="scope-button ${playback.lessonIds.includes(option.id) ? 'active' : ''}">
-      <input
-        type="checkbox"
-        data-action="toggle-playback-lesson"
-        value="${option.id}"
-        ${playback.lessonIds.includes(option.id) ? 'checked' : ''}
-      >
-      ${escapeHtml(option.label)}
-    </label>
-  `).join('');
+  return `
+    <div class="playback-scope" aria-label="在线播放课本范围">
+      ${options.map((option) => `
+        <label class="check-pill">
+          <input
+            type="checkbox"
+            data-action="toggle-playback-lesson"
+            value="${escapeAttr(option.id)}"
+            ${allSelected ? option.id === 'all' ? 'checked' : '' : selected.has(option.id) ? 'checked' : ''}
+          >
+          <span>${escapeHtml(option.label)}</span>
+        </label>
+      `).join('')}
+    </div>
+  `;
 }
 
 function updatePlaybackLessons(lessonId, checked) {
@@ -1238,7 +1247,8 @@ function stageTitle(stage) {
 }
 
 function speak(text) {
-  if (!('speechSynthesis' in window)) return;
+  stopVocabularyPlayback({ rerender: false });
+  if (!canSpeak()) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'en-US';
@@ -1246,34 +1256,121 @@ function speak(text) {
   window.speechSynthesis.speak(utterance);
 }
 
+function canSpeak() {
+  return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+}
+
+function currentPlaybackItems() {
+  return buildVocabularyPlaybackItems(vocabulary, playback.lessonIds);
+}
+
+function normalizePlaybackIndex(items) {
+  if (!items.length) {
+    playback.index = 0;
+    return;
+  }
+  playback.index = Math.max(0, Math.min(playback.index, items.length - 1));
+}
+
 function startVocabularyPlayback() {
+  if (!canSpeak()) return;
+  const items = currentPlaybackItems();
+  normalizePlaybackIndex(items);
+  if (!items.length) return;
+
   playback.playing = true;
-  playback.phase = 'idle';
+  playback.phase = 'en';
+  playback.token += 1;
+  window.speechSynthesis.cancel();
   renderVocabulary();
+  speakPlaybackPhase(playback.token, 0);
 }
 
 function pauseVocabularyPlayback() {
-  playback.playing = false;
-  playback.phase = 'paused';
-  playback.token += 1;
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  renderVocabulary();
+  stopVocabularyPlayback({ rerender: route === 'vocabulary' });
 }
 
-function moveVocabularyPlayback(step) {
-  const items = buildVocabularyPlaybackItems(vocabulary, playback.lessonIds);
+function moveVocabularyPlayback(direction) {
+  const items = currentPlaybackItems();
   if (!items.length) return;
-  playback.index = (playback.index + step + items.length) % items.length;
-  playback.phase = 'idle';
+
+  stopVocabularyPlayback({ rerender: false });
+  const nextIndex = playback.index + direction;
+  if (nextIndex < 0) {
+    playback.index = playback.loop ? items.length - 1 : 0;
+  } else if (nextIndex >= items.length) {
+    playback.index = playback.loop ? 0 : items.length - 1;
+  } else {
+    playback.index = nextIndex;
+  }
   renderVocabulary();
 }
 
 function stopVocabularyPlayback(options = {}) {
+  const rerender = options.rerender === true;
   playback.playing = false;
   playback.phase = 'idle';
   playback.token += 1;
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  if (options.rerender !== false && route === 'vocabulary') renderVocabulary();
+  if (canSpeak()) window.speechSynthesis.cancel();
+  if (rerender) renderVocabulary();
+}
+
+function speakPlaybackPhase(token, phaseIndex) {
+  if (!playback.playing || token !== playback.token) return;
+
+  const items = currentPlaybackItems();
+  normalizePlaybackIndex(items);
+  const item = items[playback.index];
+  const phase = PLAYBACK_PHASES[phaseIndex];
+
+  if (!item || !phase) {
+    finishPlaybackWord(token);
+    return;
+  }
+
+  const text = phase.field === 'cn' ? item.cn : item.en;
+  if (!text && phase.field === 'cn') {
+    speakPlaybackPhase(token, phaseIndex + 1);
+    return;
+  }
+  if (!text) {
+    finishPlaybackWord(token);
+    return;
+  }
+
+  playback.phase = phase.field;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = phase.lang;
+  utterance.rate = phase.rate;
+  utterance.onend = () => {
+    if (!playback.playing || token !== playback.token) return;
+    if (phaseIndex < PLAYBACK_PHASES.length - 1) {
+      speakPlaybackPhase(token, phaseIndex + 1);
+      return;
+    }
+    finishPlaybackWord(token);
+  };
+  utterance.onerror = () => {
+    if (token !== playback.token) return;
+    stopVocabularyPlayback({ rerender: route === 'vocabulary' });
+  };
+  window.speechSynthesis.speak(utterance);
+}
+
+function finishPlaybackWord(token) {
+  if (!playback.playing || token !== playback.token) return;
+
+  const items = currentPlaybackItems();
+  const atLast = playback.index >= items.length - 1;
+  if (atLast && !playback.loop) {
+    stopVocabularyPlayback({ rerender: route === 'vocabulary' });
+    return;
+  }
+
+  playback.index = atLast ? 0 : playback.index + 1;
+  playback.phase = 'en';
+  if (route === 'vocabulary') renderVocabulary();
+  speakPlaybackPhase(token, 0);
 }
 
 function setActiveNav() {
