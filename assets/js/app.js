@@ -45,6 +45,7 @@ const PLAYBACK_PHASES = [
   { field: 'cn', lang: 'zh-CN', rate: 0.9 },
   { field: 'en', lang: 'en-US', rate: 0.82 },
 ];
+const PLAYBACK_GAP_MS = 1000;
 
 render();
 
@@ -1315,6 +1316,13 @@ function stopVocabularyPlayback(options = {}) {
   if (rerender) renderVocabulary();
 }
 
+function schedulePlaybackStep(token, callback) {
+  window.setTimeout(() => {
+    if (!playback.playing || token !== playback.token) return;
+    callback();
+  }, PLAYBACK_GAP_MS);
+}
+
 function speakPlaybackPhase(token, phaseIndex) {
   if (!playback.playing || token !== playback.token) return;
 
@@ -1330,7 +1338,7 @@ function speakPlaybackPhase(token, phaseIndex) {
 
   const text = phase.field === 'cn' ? item.cn : item.en;
   if (!text && phase.field === 'cn') {
-    speakPlaybackPhase(token, phaseIndex + 1);
+    schedulePlaybackStep(token, () => speakPlaybackPhase(token, phaseIndex + 1));
     return;
   }
   if (!text) {
@@ -1345,7 +1353,7 @@ function speakPlaybackPhase(token, phaseIndex) {
   utterance.onend = () => {
     if (!playback.playing || token !== playback.token) return;
     if (phaseIndex < PLAYBACK_PHASES.length - 1) {
-      speakPlaybackPhase(token, phaseIndex + 1);
+      schedulePlaybackStep(token, () => speakPlaybackPhase(token, phaseIndex + 1));
       return;
     }
     finishPlaybackWord(token);
@@ -1370,7 +1378,7 @@ function finishPlaybackWord(token) {
   playback.index = atLast ? 0 : playback.index + 1;
   playback.phase = 'en';
   if (route === 'vocabulary') renderVocabulary();
-  speakPlaybackPhase(token, 0);
+  schedulePlaybackStep(token, () => speakPlaybackPhase(token, 0));
 }
 
 function setActiveNav() {

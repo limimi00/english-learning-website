@@ -102,6 +102,8 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
   const navClickSource = sourceSection(appSource, /navButtons\.forEach\(\(button\) => \{/, /\n\}\);\n\napp\.addEventListener\('click'/, 'bottom navigation click handler');
   const appClickSource = sourceSection(appSource, /app\.addEventListener\('click', \(event\) => \{/, /\n\}\);\n\napp\.addEventListener\('keydown'/, 'app click event listener');
   const navigateSource = sourceSection(appSource, /function navigate\(nextRoute\) \{/, /\nfunction /, 'navigate(nextRoute) function');
+  const schedulePlaybackStepSource = sourceSection(appSource, /function schedulePlaybackStep\(token, callback\) \{/, /\nfunction /, 'schedulePlaybackStep(token, callback) function');
+  const finishPlaybackWordSource = sourceSection(appSource, /function finishPlaybackWord\(token\) \{/, /\nfunction /, 'finishPlaybackWord(token) function');
   const appSourceWithoutAllowedRouteAssignments = appSource
     .replace(navigateSource, '')
     .replace(/let route = 'home';/, '');
@@ -113,12 +115,19 @@ test('vocabulary audio player speaks English Chinese English and stops on naviga
   ]);
   const speakPlaybackPhaseSource = sourceSection(appSource, /function speakPlaybackPhase\(token, phaseIndex\) \{/, /\nfunction /, 'speakPlaybackPhase(token, phaseIndex) function');
 
+  assert.match(appSource, /const PLAYBACK_GAP_MS = 1000;/);
+  assert.match(schedulePlaybackStepSource, /window\.setTimeout/);
+  assert.match(schedulePlaybackStepSource, /PLAYBACK_GAP_MS/);
+  assert.match(schedulePlaybackStepSource, /token !== playback\.token/);
+  assert.match(schedulePlaybackStepSource, /callback\(\)/);
   assert.match(speakPlaybackPhaseSource, /PLAYBACK_PHASES\[phaseIndex\]/);
   assert.match(speakPlaybackPhaseSource, /new SpeechSynthesisUtterance/);
   assert.match(
     speakPlaybackPhaseSource,
     /item(?:\?\.)?\[\s*phase\.field\s*\]|phase\.field\s*===\s*'cn'[\s\S]*\?[\s\S]*item\.cn[\s\S]*:[\s\S]*item\.en|phase\.field\s*===\s*'en'[\s\S]*\?[\s\S]*item\.en[\s\S]*:[\s\S]*item\.cn/
   );
+  assert.match(speakPlaybackPhaseSource, /schedulePlaybackStep\(token, \(\) => speakPlaybackPhase\(token, phaseIndex \+ 1\)\)/);
+  assert.match(finishPlaybackWordSource, /schedulePlaybackStep\(token, \(\) => speakPlaybackPhase\(token, 0\)\)/);
   assert.match(speakPlaybackPhaseSource, /utterance\.lang\s*=\s*phase\.lang/);
   assert.match(appSource, /function stopVocabularyPlayback\(/);
   assert.match(navClickSource, /navigate\(button\.dataset\.route\);/);
