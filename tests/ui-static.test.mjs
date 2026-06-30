@@ -59,7 +59,12 @@ test('vocabulary page renders audio playback controls for deduplicated words', a
   assert.match(renderVocabularyPlayerSource, /data-action="previous-vocabulary-word"/);
   assert.match(renderVocabularyPlayerSource, /data-action="next-vocabulary-word"/);
   assert.match(renderVocabularyPlayerSource, /data-action="toggle-vocabulary-loop"/);
+  assert.match(renderVocabularyPlayerSource, /const loopLabel = playback\.loop \? '循环已开' : '开启循环';/);
+  assert.match(renderVocabularyPlayerSource, /class="ghost-button loop-toggle \$\{playback\.loop \? 'is-on' : ''\}"/);
+  assert.match(renderVocabularyPlayerSource, /aria-label="\$\{loopLabel\}"/);
+  assert.match(renderVocabularyPlayerSource, />\$\{loopLabel\}<\/button>/);
   assert.match(cssSource, /\.audio-player\s*\{/);
+  assert.match(cssSource, /\.loop-toggle\.is-on\s*\{/);
 });
 
 test('vocabulary audio player supports all and multi-part selection', async () => {

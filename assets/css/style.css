@@ -232,10 +232,16 @@ button:disabled {
   padding: 0 14px;
 }
 
-.active-toggle {
-  border-color: rgba(208, 138, 97, 0.46);
-  background: rgba(208, 138, 97, 0.16);
-  color: var(--earth);
+.loop-toggle.is-on {
+  border-color: rgba(78, 124, 89, 0.62);
+  background: linear-gradient(135deg, var(--moss), var(--blue));
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(79, 112, 118, 0.18);
+}
+
+.loop-pill.is-on {
+  background: rgba(111, 151, 123, 0.18);
+  color: var(--moss);
 }
 
 .eyebrow {

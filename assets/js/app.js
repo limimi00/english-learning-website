@@ -1139,6 +1139,8 @@ function renderVocabularyPlayer(items) {
   const disabled = !supported || !items.length;
   const status = current ? `${playback.index + 1} / ${items.length}` : `0 / ${items.length}`;
   const sourceLabel = current?.sources?.length ? current.sources.map(sourceTitle).join('、') : '暂无来源';
+  const loopLabel = playback.loop ? '循环已开' : '开启循环';
+  const loopStatusLabel = playback.loop ? '循环已开' : '单轮播放';
 
   return `
     <section class="audio-player section-band">
@@ -1154,7 +1156,7 @@ function renderVocabularyPlayer(items) {
           <div class="word-cn">${escapeHtml(current?.cn || '中文释义待补充')}</div>
           <p class="meta">${escapeHtml(sourceLabel)} · ${escapeHtml(status)}</p>
         </div>
-        <span class="pill">${playback.loop ? '循环' : '单轮'}</span>
+        <span class="pill loop-pill ${playback.loop ? 'is-on' : ''}">${loopStatusLabel}</span>
       </div>
       ${supported ? '' : '<p class="feedback bad">当前浏览器不支持语音朗读。</p>'}
       <div class="audio-controls" role="group" aria-label="播放控制">
@@ -1162,7 +1164,7 @@ function renderVocabularyPlayer(items) {
         <button class="primary-button" type="button" data-action="play-vocabulary-audio" ${disabled || playback.playing ? 'disabled' : ''}>播放</button>
         <button class="secondary-button" type="button" data-action="pause-vocabulary-audio" ${disabled || !playback.playing ? 'disabled' : ''}>暂停</button>
         <button class="icon-button" type="button" data-action="next-vocabulary-word" ${disabled ? 'disabled' : ''} aria-label="下一个词">›</button>
-        <button class="ghost-button ${playback.loop ? 'active-toggle' : ''}" type="button" data-action="toggle-vocabulary-loop" aria-pressed="${playback.loop ? 'true' : 'false'}">循环</button>
+        <button class="ghost-button loop-toggle ${playback.loop ? 'is-on' : ''}" type="button" data-action="toggle-vocabulary-loop" aria-pressed="${playback.loop ? 'true' : 'false'}" aria-label="${loopLabel}" title="${loopLabel}">${loopLabel}</button>
       </div>
     </section>
   `;
