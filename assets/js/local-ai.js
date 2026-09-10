@@ -33,18 +33,23 @@ export function validateLoopbackBaseUrl(value) {
     return { valid: false, reason: 'invalid-base-url' };
   }
 
-  const pathWithoutTrailingSlashes = rawPath.replace(/\/+$/u, '');
-  if (pathWithoutTrailingSlashes.includes('//')) {
-    return { valid: false, reason: 'invalid-base-url' };
-  }
+  let decodedPath = rawPath;
   try {
-    for (const segment of rawPath.split('/')) {
-      const decoded = decodeURIComponent(segment);
-      if (decoded === '.' || decoded === '..' || decoded.includes('/') || decoded.includes('\\')) {
-        return { valid: false, reason: 'invalid-base-url' };
-      }
+    for (let depth = 0; depth < 8; depth += 1) {
+      const next = decodeURIComponent(decodedPath);
+      if (next === decodedPath) break;
+      decodedPath = next;
     }
   } catch {
+    return { valid: false, reason: 'invalid-base-url' };
+  }
+  const pathWithoutTrailingSlashes = decodedPath.replace(/\/+$/u, '');
+  if (
+    pathWithoutTrailingSlashes.includes('//')
+    || /\s|\\|[?#]|[\u0000-\u001f\u007f]/u.test(decodedPath)
+    || decodedPath.split('/').some((segment) => segment === '.' || segment === '..')
+    || /%[0-9a-f]{2}/iu.test(decodedPath)
+  ) {
     return { valid: false, reason: 'invalid-base-url' };
   }
 
@@ -74,6 +79,7 @@ export function validateLoopbackBaseUrl(value) {
 }
 
 export function normalizeLocalAiSettings(settings = {}) {
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) settings = {};
   const requestedProvider = typeof settings.provider === 'string' ? settings.provider.toLowerCase() : '';
   const provider = Object.hasOwn(LOCAL_AI_PRESETS, requestedProvider) ? requestedProvider : 'custom';
   const presetUrl = LOCAL_AI_PRESETS[provider]?.baseUrl || '';
@@ -94,7 +100,12 @@ function timeoutDuration(value) {
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : DEFAULT_TIMEOUT_MS;
 }
 
-async function fetchWithCancellation(url, options, { fetchImpl, signal, timeoutMs }) {
+async function fetchJsonWithCancellation(url, options, {
+  fetchImpl,
+  signal,
+  timeoutMs,
+  malformedReason,
+}) {
   if (typeof fetchImpl !== 'function') {
     return { ok: false, reason: 'unavailable' };
   }
@@ -111,19 +122,28 @@ async function fetchWithCancellation(url, options, { fetchImpl, signal, timeoutM
     if (controller.signal.aborted) return;
     timedOut = reason === 'timeout';
     callerAborted = reason === 'aborted';
-    controller.abort();
     rejectCancellation(new Error(reason));
+    controller.abort();
   };
   const onCallerAbort = () => cancel('aborted');
   signal?.addEventListener('abort', onCallerAbort, { once: true });
   const timer = setTimeout(() => cancel('timeout'), timeoutDuration(timeoutMs));
 
   try {
-    const response = await Promise.race([
-      Promise.resolve().then(() => fetchImpl(url, { ...options, signal: controller.signal })),
+    const result = await Promise.race([
+      Promise.resolve().then(async () => {
+        const response = await fetchImpl(url, { ...options, signal: controller.signal });
+        const rejected = rejectResponse(response);
+        if (rejected) return rejected;
+        try {
+          return { ok: true, payload: await response.json() };
+        } catch {
+          return { ok: false, reason: malformedReason };
+        }
+      }),
       cancellation,
     ]);
-    return { ok: true, response };
+    return result;
   } catch {
     if (timedOut) return { ok: false, reason: 'timeout' };
     if (callerAborted || signal?.aborted) return { ok: false, reason: 'aborted' };
@@ -152,10 +172,11 @@ export async function testLocalAiConnection({
   signal,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 } = {}) {
-  const validation = validateLoopbackBaseUrl(settings.baseUrl);
+  const sourceSettings = settings && typeof settings === 'object' ? settings : {};
+  const validation = validateLoopbackBaseUrl(sourceSettings.baseUrl);
   if (!validation.valid) return { ok: false, reason: 'invalid-base-url' };
 
-  const request = await fetchWithCancellation(
+  const request = await fetchJsonWithCancellation(
     `${validation.baseUrl}/models`,
     {
       method: 'GET',
@@ -163,25 +184,19 @@ export async function testLocalAiConnection({
       redirect: 'error',
       headers: { Accept: 'application/json' },
     },
-    { fetchImpl, signal, timeoutMs },
+    { fetchImpl, signal, timeoutMs, malformedReason: 'invalid-response' },
   );
   if (!request.ok) return request;
 
-  const rejected = rejectResponse(request.response);
-  if (rejected) return rejected;
-  try {
-    const payload = await request.response.json();
-    if (
-      !payload
-      || !Array.isArray(payload.data)
-      || payload.data.some((item) => !item || typeof item.id !== 'string' || item.id.length === 0)
-    ) {
-      return { ok: false, reason: 'invalid-response' };
-    }
-    return { ok: true, models: payload.data.map((item) => item.id) };
-  } catch {
+  const { payload } = request;
+  if (
+    !payload
+    || !Array.isArray(payload.data)
+    || payload.data.some((item) => !item || typeof item.id !== 'string' || item.id.length === 0)
+  ) {
     return { ok: false, reason: 'invalid-response' };
   }
+  return { ok: true, models: payload.data.map((item) => item.id) };
 }
 
 function validCandidateIds(candidateIds) {
@@ -215,6 +230,9 @@ function parseModelSelection(content, candidateIds) {
   const trimmed = content.trim();
   const fenced = /^```(?:json)?\s*\n?([\s\S]*?)\n?```$/iu.exec(trimmed);
   const source = fenced ? fenced[1].trim() : trimmed;
+  if (!/^\{\s*"moveId"\s*:\s*"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnrt]|u[0-9a-f]{4}))*"\s*\}$/iu.test(source)) {
+    return null;
+  }
   let parsed;
   try {
     parsed = JSON.parse(source);
@@ -242,13 +260,14 @@ export async function selectApprovedMove({
   signal,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 } = {}) {
-  const validation = validateLoopbackBaseUrl(settings.baseUrl);
-  if (!validation.valid || typeof settings.model !== 'string' || !settings.model.trim() || !validCandidateIds(candidateIds)) {
+  const sourceSettings = settings && typeof settings === 'object' ? settings : {};
+  const validation = validateLoopbackBaseUrl(sourceSettings.baseUrl);
+  if (!validation.valid || typeof sourceSettings.model !== 'string' || !sourceSettings.model.trim() || !validCandidateIds(candidateIds)) {
     return { ok: false, reason: 'invalid-request' };
   }
 
   const body = {
-    model: settings.model.trim(),
+    model: sourceSettings.model.trim(),
     stream: false,
     temperature: 0,
     response_format: { type: 'json_object' },
@@ -263,7 +282,7 @@ export async function selectApprovedMove({
       },
     ],
   };
-  const request = await fetchWithCancellation(
+  const request = await fetchJsonWithCancellation(
     `${validation.baseUrl}/chat/completions`,
     {
       method: 'POST',
@@ -275,20 +294,13 @@ export async function selectApprovedMove({
       },
       body: JSON.stringify(body),
     },
-    { fetchImpl, signal, timeoutMs },
+    { fetchImpl, signal, timeoutMs, malformedReason: 'invalid-model-selection' },
   );
   if (!request.ok) return request;
 
-  const rejected = rejectResponse(request.response);
-  if (rejected) return rejected;
-  try {
-    const payload = await request.response.json();
-    const content = payload?.choices?.[0]?.message?.content;
-    const moveId = parseModelSelection(content, candidateIds);
-    return moveId
-      ? { ok: true, moveId }
-      : { ok: false, reason: 'invalid-model-selection' };
-  } catch {
-    return { ok: false, reason: 'invalid-model-selection' };
-  }
+  const content = request.payload?.choices?.[0]?.message?.content;
+  const moveId = parseModelSelection(content, candidateIds);
+  return moveId
+    ? { ok: true, moveId }
+    : { ok: false, reason: 'invalid-model-selection' };
 }

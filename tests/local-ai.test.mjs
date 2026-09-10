@@ -57,12 +57,23 @@ test('URL validation rejects ambiguous URL spellings and components', () => {
     'http://localhost:1234/v1#fragment',
     'http://localhost:1234/v1/../admin',
     'http://localhost:1234/v1/%2e%2e/admin',
+    'http://localhost:1234/v1/%252e%252e/admin',
+    'http://localhost:1234/v1/%2500',
     'http://localhost:1234\\@example.com/v1',
   ];
 
   for (const baseUrl of invalidUrls) {
     assert.equal(validateLoopbackBaseUrl(baseUrl).valid, false, baseUrl);
   }
+});
+
+test('settings normalization treats null as disabled invalid custom settings', () => {
+  assert.deepEqual(normalizeLocalAiSettings(null), {
+    enabled: false,
+    provider: 'custom',
+    baseUrl: '',
+    model: '',
+  });
 });
 
 test('settings normalization uses presets and never retains API credentials', () => {
@@ -190,6 +201,50 @@ test('connection testing respects caller cancellation', async () => {
   assert.deepEqual(await pending, { ok: false, reason: 'aborted' });
 });
 
+test('connection timeout remains active while the response body is pending', async () => {
+  let bodyStarted = false;
+  const result = await testLocalAiConnection({
+    settings: LM_STUDIO_SETTINGS,
+    fetchImpl: async () => ({
+      ok: true,
+      redirected: false,
+      status: 200,
+      json: async () => {
+        bodyStarted = true;
+        return new Promise(() => {});
+      },
+    }),
+    timeoutMs: 5,
+  });
+
+  assert.equal(bodyStarted, true);
+  assert.deepEqual(result, { ok: false, reason: 'timeout' });
+});
+
+test('connection caller cancellation remains active while the response body is pending', async () => {
+  const controller = new AbortController();
+  let markBodyStarted;
+  const bodyStarted = new Promise((resolve) => { markBodyStarted = resolve; });
+  const pending = testLocalAiConnection({
+    settings: LM_STUDIO_SETTINGS,
+    fetchImpl: async () => ({
+      ok: true,
+      redirected: false,
+      status: 200,
+      json: async () => {
+        markBodyStarted();
+        return new Promise(() => {});
+      },
+    }),
+    signal: controller.signal,
+    timeoutMs: 500,
+  });
+  await bodyStarted;
+  controller.abort();
+
+  assert.deepEqual(await pending, { ok: false, reason: 'aborted' });
+});
+
 test('model selection returns only an approved candidate id and sends minimal approved state', async () => {
   let request;
   const fetchImpl = async (url, options) => {
@@ -259,6 +314,7 @@ test('invalid, malformed, or cross-scope model output returns a deterministic fa
     '{"moveId":"future-part"}',
     'Here is the answer: {"moveId":"ask-origin"}',
     '{"moveId":"ask-origin","explanation":"render me"}',
+    '{"moveId":"future-part","moveId":"ask-origin"}',
     '{"moveId":42}',
     '{not json}',
     '```json\n{"moveId":"ask-origin"}\n``` extra',
@@ -358,6 +414,50 @@ test('model selection aborts on timeout and caller cancellation', async () => {
     signal: controller.signal,
     timeoutMs: 500,
   });
+  controller.abort();
+  assert.deepEqual(await pending, { ok: false, reason: 'aborted' });
+});
+
+test('model-selection timeout and caller cancellation cover pending JSON bodies', async () => {
+  let timeoutBodyStarted = false;
+  const timedOut = await selectApprovedMove({
+    settings: LM_STUDIO_SETTINGS,
+    candidateIds: ['ask-origin'],
+    state: {},
+    fetchImpl: async () => ({
+      ok: true,
+      redirected: false,
+      status: 200,
+      json: async () => {
+        timeoutBodyStarted = true;
+        return new Promise(() => {});
+      },
+    }),
+    timeoutMs: 5,
+  });
+  assert.equal(timeoutBodyStarted, true);
+  assert.deepEqual(timedOut, { ok: false, reason: 'timeout' });
+
+  const controller = new AbortController();
+  let markBodyStarted;
+  const bodyStarted = new Promise((resolve) => { markBodyStarted = resolve; });
+  const pending = selectApprovedMove({
+    settings: LM_STUDIO_SETTINGS,
+    candidateIds: ['ask-origin'],
+    state: {},
+    fetchImpl: async () => ({
+      ok: true,
+      redirected: false,
+      status: 200,
+      json: async () => {
+        markBodyStarted();
+        return new Promise(() => {});
+      },
+    }),
+    signal: controller.signal,
+    timeoutMs: 500,
+  });
+  await bodyStarted;
   controller.abort();
   assert.deepEqual(await pending, { ok: false, reason: 'aborted' });
 });
