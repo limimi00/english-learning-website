@@ -8,6 +8,7 @@ const SPELLING_VARIANTS = new Map([
 const SPEAKING_PASSES = ['listen', 'role-a', 'role-b', 'complete'];
 const SPEAKING_REVIEW_INTERVAL_DAYS = [1, 3, 7];
 const SPEAKING_SKILLS = ['listen', 'repeat', 'guided-produce', 'independent-produce'];
+const SPEAKING_RESULTS = new Set(['correct', 'incorrect', 'technical-fallback', 'skipped']);
 const UNASSESSED_SPEAKING_RESULTS = new Set(['technical-fallback', 'skipped']);
 
 export function tokenizeCourseEnglish(value) {
@@ -272,6 +273,9 @@ export function nextSpeakingReviewDate(dateKey, reviewLevel) {
 export function recordSpeakingAttempt(progress = {}, attempt) {
   if (!SPEAKING_SKILLS.includes(attempt.skill)) {
     throw new TypeError(`Unknown speaking skill: ${attempt.skill}`);
+  }
+  if (!SPEAKING_RESULTS.has(attempt.result)) {
+    throw new TypeError(`Unknown speaking result: ${attempt.result}`);
   }
 
   const key = `${attempt.lessonId}:${attempt.scenarioId}:${attempt.turnId}`;

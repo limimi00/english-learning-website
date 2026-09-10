@@ -254,13 +254,19 @@ test('speaking session advances listen to role A to role B to complete without m
 test('currentSpeakingTurn identifies learner and system ownership in each pass', () => {
   const scenario = dialoguePacks[0].scenarios[0];
   const roleATurn = currentSpeakingTurn({ pass: 'role-a', turnIndex: 0 }, scenario);
+  const roleAResponse = currentSpeakingTurn({ pass: 'role-a', turnIndex: 1 }, scenario);
   const roleBTurn = currentSpeakingTurn({ pass: 'role-b', turnIndex: 0 }, scenario);
+  const roleBResponse = currentSpeakingTurn({ pass: 'role-b', turnIndex: 1 }, scenario);
   const listenTurn = currentSpeakingTurn({ pass: 'listen', turnIndex: 0 }, scenario);
 
   assert.equal(roleATurn.learnerTurn, scenario.turns[0].role === 'A');
   assert.equal(roleATurn.systemTurn, false);
+  assert.equal(roleAResponse.learnerTurn, false);
+  assert.equal(roleAResponse.systemTurn, true);
   assert.equal(roleBTurn.learnerTurn, false);
   assert.equal(roleBTurn.systemTurn, true);
+  assert.equal(roleBResponse.learnerTurn, true);
+  assert.equal(roleBResponse.systemTurn, false);
   assert.equal(listenTurn.learnerTurn, false);
   assert.equal(listenTurn.systemTurn, true);
   assert.equal(currentSpeakingTurn({ pass: 'complete', turnIndex: 0 }, scenario), null);
@@ -326,6 +332,35 @@ test('technical voice failure and skipped turns never increment speaking wrongCo
   assert.equal(line.dueDate, null);
 });
 
+test('unknown speaking results are rejected without awarding mastery or adding an error', () => {
+  const progress = recordSpeakingAttempt({}, {
+    lessonId: 'part-1',
+    scenarioId: 'meet-colleague',
+    turnId: 'turn-1',
+    skill: 'guided-produce',
+    result: 'correct',
+    supportUsed: false,
+    date: '2026-09-10',
+  });
+  const snapshot = structuredClone(progress);
+
+  assert.throws(() => recordSpeakingAttempt(progress, {
+    lessonId: 'part-1',
+    scenarioId: 'meet-colleague',
+    turnId: 'turn-1',
+    skill: 'guided-produce',
+    result: 'permission-denied',
+    supportUsed: false,
+    date: '2026-09-11',
+  }), {
+    name: 'TypeError',
+    message: 'Unknown speaking result: permission-denied',
+  });
+  assert.deepEqual(progress, snapshot);
+  assert.equal(progress['part-1:meet-colleague:turn-1'].reviewLevel, 1);
+  assert.equal(progress['part-1:meet-colleague:turn-1'].wrongCount, 0);
+});
+
 test('revealing the full answer records support and an incorrect attempt schedules tomorrow', () => {
   const progress = recordSpeakingAttempt({}, {
     lessonId: 'part-1',
@@ -380,11 +415,16 @@ test('speaking review queue contains only due speaking lines in deterministic or
       kind: 'speaking', lessonId: 'part-1', scenarioId: 'objects-colors', turnId: 'turn-1',
       dueDate: '2026-09-11', wrongCount: 2,
     },
+    'part-1:feelings:turn-1': {
+      kind: 'speaking', lessonId: 'part-1', scenarioId: 'feelings', turnId: 'turn-1',
+      dueDate: '2026-09-10', wrongCount: 1,
+    },
   };
 
   const queue = buildSpeakingReviewQueue(progress, { today: '2026-09-10', lessonId: 'part-1' });
   assert.deepEqual(queue.map((item) => item.key), [
     'part-1:meet-colleague:turn-1',
+    'part-1:feelings:turn-1',
     'part-1:feelings:turn-2',
   ]);
 });
