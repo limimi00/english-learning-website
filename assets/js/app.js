@@ -3,6 +3,7 @@ import { dialoguePacks } from '../../data/dialogues.js';
 import {
   advanceSpeakingSession,
   buildLessonWhitelist,
+  buildSpeakingReviewQueue,
   createSpeakingSession,
   currentSpeakingTurn,
   recordSpeakingAttempt,
@@ -39,8 +40,10 @@ const STAGES = ['listen', 'choice', 'dictation', 'fillblank'];
 const PROVIDERS = new Set(['off', 'ollama', 'lmstudio', 'custom']);
 const NORMAL_RATES = new Set([0.8, 0.9, 1]);
 const SLOW_RATES = new Set([0.55, 0.65, 0.75]);
+const memoryStorage = new Map();
 
 const app = document.querySelector('#app');
+const statusLive = document.querySelector('#status-live');
 const navButtons = Array.from(document.querySelectorAll('.nav-button'));
 const vocabulary = buildVocabularyIndex(lessons);
 const wordPracticeItems = buildWordPracticeItems(lessons);
@@ -56,6 +59,7 @@ let speakingScenario = null;
 let speakingWhitelist = null;
 let speakingUi = emptySpeakingUi();
 let speakingModeNotice = '';
+let lastFocusedSpeakingIdentity = '';
 let activeFeedback = null;
 let session = null;
 let drillSession = null;
@@ -107,6 +111,7 @@ app.addEventListener('click', (event) => {
 
   const { action: name } = action.dataset;
   if (name === 'start-speaking') startSpeaking(action.dataset.lessonId, action.dataset.scenarioId);
+  if (name === 'review-speaking') startSpeaking(action.dataset.lessonId, action.dataset.scenarioId, '正在复习到期对话');
   if (name === 'speaking-replay') playSpeakingTurn();
   if (name === 'speaking-slow') toggleSlowSpeech();
   if (name === 'reveal-answer') revealSpeakingAnswer();
@@ -205,6 +210,7 @@ app.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('keydown', handleDrillShortcut);
+document.addEventListener('keydown', handleSpeakingShortcut);
 
 app.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -270,7 +276,7 @@ function renderHome() {
   const lessonId = currentDailyLessonId();
   const lesson = lessons.find((item) => item.id === lessonId) || lessons[0];
   const pack = dialoguePacks.find((item) => item.lessonId === lesson.id);
-  const scenario = pack?.scenarios[0];
+  const scenario = recommendedScenarioForLesson(lesson.id) || pack?.scenarios[0];
   const targetWords = scenario
     ? Array.from(new Set(scenario.turns.flatMap((turn) => tokenizeCourseEnglish(turn.en)))).slice(0, 8)
     : [];
@@ -323,6 +329,10 @@ function renderSpeaking() {
   const lessonId = currentDailyLessonId();
   const lesson = lessons.find((item) => item.id === lessonId) || lessons[0];
   const pack = dialoguePacks.find((item) => item.lessonId === lesson.id);
+  const recommended = recommendedScenarioForLesson(lesson.id);
+  const scenarios = recommended
+    ? [recommended, ...(pack?.scenarios || []).filter((item) => item.id !== recommended.id)]
+    : pack?.scenarios || [];
 
   app.innerHTML = `
     ${header('交互式对话', `Part ${lesson.order} · 选择一个场景，完成三遍口语练习。`)}
@@ -337,7 +347,7 @@ function renderSpeaking() {
       ${lessonScopeControl(lesson.id)}
     </section>
     <section class="scenario-list" aria-label="对话场景">
-      ${(pack?.scenarios || []).map((scenario, index) => `
+      ${scenarios.map((scenario, index) => `
         <article class="scenario-card ${scenario.id === selectedSpeakingScenarioId ? 'is-selected' : ''}">
           <div class="scenario-number" aria-hidden="true">${index + 1}</div>
           <div class="scenario-copy">
@@ -411,6 +421,7 @@ function renderSpeakingPractice() {
       </div>
     </section>
   `;
+  focusActiveSpeakingTurn();
 }
 
 function renderDialogueTurn(turn, index, current) {
@@ -428,7 +439,7 @@ function renderDialogueTurn(turn, index, current) {
       : '<p class="dialogue-locked">轮到这一句时再显示</p>';
 
   return `
-    <article class="dialogue-turn ${stateClass}" ${active ? 'aria-current="step"' : ''}>
+    <article class="dialogue-turn ${stateClass}" ${active ? 'aria-current="step" tabindex="-1"' : ''}>
       <div class="role-marker" aria-label="角色 ${turn.role}">${turn.role}</div>
       <div class="dialogue-copy">
         <div class="dialogue-role-row">
@@ -548,29 +559,78 @@ function renderSpeakingComplete() {
 function renderReview() {
   const lesson = lessons.find((item) => item.id === currentDailyLessonId()) || lessons[0];
   const wrongCount = wrongVocabulary(lesson.id).length;
+  const currentDue = buildSpeakingReviewQueue(speakingProgress, { lessonId: lesson.id, today: todayKey() });
+  const oldDue = buildSpeakingReviewQueue(speakingProgress, { today: todayKey() })
+    .filter((item) => item.lessonId !== lesson.id);
 
   app.innerHTML = `
-    ${header('复习', `围绕 Part ${lesson.order} 巩固词语、句子和错题。`)}
-    <section class="review-grid">
-      <article class="review-card">
-        <p class="eyebrow">Vocabulary</p>
-        <h2>本课词语</h2>
-        <p class="meta">先听英文，再看中文，熟悉对话里会出现的词语。</p>
-        <button class="secondary-button" type="button" data-action="open-vocabulary" data-lesson-id="${lesson.id}">打开词语</button>
-      </article>
-      <article class="review-card">
-        <p class="eyebrow">Practice</p>
-        <h2>读写练习</h2>
-        <p class="meta">把原有的单词、句子、语法和问答练习集中在这里。</p>
-        <button class="secondary-button" type="button" data-action="open-practice">打开练习</button>
-      </article>
-      <article class="review-card">
-        <p class="eyebrow">Mistakes</p>
-        <h2>错题本</h2>
-        <p class="meta">Part ${lesson.order} 当前有 ${wrongCount} 个需要重新练习的词语。</p>
-        <button class="ghost-button" type="button" data-action="open-wrongbook">查看错题</button>
-      </article>
-    </section>
+    ${header('复习', `先复说到期对话，再处理 Part ${lesson.order} 的错词和辅助练习。`)}
+    <div class="review-sections">
+      <section class="section-band review-section">
+        <div class="review-section-heading">
+          <div>
+            <p class="eyebrow">Speaking</p>
+            <h2>本课待复说</h2>
+          </div>
+          <span class="pill">${currentDue.length} 项</span>
+        </div>
+        <div class="review-list">
+          ${currentDue.length ? currentDue.map(renderSpeakingReviewItem).join('') : empty('今天没有到期对话，可以开始新的场景。')}
+        </div>
+      </section>
+
+      <section class="section-band review-section">
+        <div class="review-section-heading">
+          <div>
+            <p class="eyebrow">Earlier Parts</p>
+            <h2>旧课复习</h2>
+          </div>
+          <span class="pill">${oldDue.length} 项</span>
+        </div>
+        <div class="review-list">
+          ${oldDue.length ? oldDue.slice(0, 8).map(renderSpeakingReviewItem).join('') : empty('旧课目前没有到期口语。')}
+        </div>
+      </section>
+
+      <section class="review-grid">
+        <article class="review-card">
+          <p class="eyebrow">Words</p>
+          <h2>错词</h2>
+          <p class="meta">Part ${lesson.order} 当前有 ${wrongCount} 个需要重新练习的词语。</p>
+          <button class="ghost-button" type="button" data-action="open-wrongbook">查看错题</button>
+        </article>
+        <article class="review-card">
+          <p class="eyebrow">Vocabulary</p>
+          <h2>本课词语</h2>
+          <p class="meta">先听英文，再看中文，熟悉对话里会出现的词语。</p>
+          <button class="secondary-button" type="button" data-action="open-vocabulary" data-lesson-id="${lesson.id}">打开词语</button>
+        </article>
+        <article class="review-card">
+          <p class="eyebrow">More Practice</p>
+          <h2>辅助练习</h2>
+          <p class="meta">单词、句子、语法和问答仍然保留，作为口语之外的补充。</p>
+          <button class="secondary-button" type="button" data-action="open-practice">打开练习</button>
+        </article>
+      </section>
+    </div>
+  `;
+}
+
+function renderSpeakingReviewItem(item) {
+  const lesson = lessons.find((candidate) => candidate.id === item.lessonId);
+  const scenario = dialoguePacks
+    .find((pack) => pack.lessonId === item.lessonId)
+    ?.scenarios.find((candidate) => candidate.id === item.scenarioId);
+  if (!lesson || !scenario) return '';
+  return `
+    <article class="review-speaking-item">
+      <div>
+        <p class="eyebrow">Part ${lesson.order} · ${escapeHtml(item.dueDate)}</p>
+        <h3>${escapeHtml(scenario.titleCn)}</h3>
+        <p class="meta">${escapeHtml(scenario.goalCn)}</p>
+      </div>
+      <button class="primary-button" type="button" data-action="review-speaking" data-lesson-id="${lesson.id}" data-scenario-id="${scenario.id}">开始复说</button>
+    </article>
   `;
 }
 
@@ -613,7 +673,7 @@ function renderSettings() {
         </div>
         <div class="setting-actions">
           <button class="ghost-button" type="button" data-action="test-local-ai" ${local.provider === 'off' ? 'disabled' : ''}>测试本机连接</button>
-          <p class="ai-status ${statusClass}" role="status" aria-live="polite">${escapeHtml(aiConnection.message)}</p>
+          <p class="ai-status ${statusClass}">${escapeHtml(aiConnection.message)}</p>
         </div>
         <p class="settings-help">GitHub Pages 使用 HTTPS。浏览器可能要求你允许“本地网络访问”，本机服务也需要允许跨域访问；连接只发往你填写的回环地址。</p>
       </section>
@@ -1200,7 +1260,9 @@ function startSpeaking(lessonId, scenarioId, modeNotice = '') {
   });
   speakingUi = emptySpeakingUi();
   speakingModeNotice = modeNotice;
+  lastFocusedSpeakingIdentity = '';
   render();
+  announceStatus(`开始${speakingPassMeta(speakingSession.pass).title}，第 1 轮。`);
   playSpeakingTurn({ autoAdvance: true });
 }
 
@@ -1351,6 +1413,7 @@ function startSpeakingRecognition() {
   speakingUi.listening = true;
   speakingUi.feedback = null;
   renderSpeakingPractice();
+  announceStatus('正在听你说。');
   const turnIdentity = `${speakingSession.pass}:${speakingSession.turnIndex}`;
   const started = speechInput.start({
     lang: 'en-US',
@@ -1366,6 +1429,7 @@ function stopSpeakingRecognition() {
   speakingUi.listening = false;
   speakingUi.feedback = { type: 'info', message: '录音已停止，你也可以直接做自评。' };
   renderSpeakingPractice();
+  announceStatus('录音已停止。');
 }
 
 function handleSpeakingTranscript(transcript, turnIdentity) {
@@ -1383,10 +1447,12 @@ function handleSpeakingTranscript(transcript, turnIdentity) {
     recordCurrentSpeakingAttempt('incorrect');
     speakingUi.feedback = { type: 'bad', message: '本轮请使用本课句型' };
     renderSpeakingPractice();
+    announceStatus('本轮请使用本课句型。');
     return;
   }
 
   recordCurrentSpeakingAttempt('correct');
+  announceStatus('这句完成。');
   advanceSpeakingFlow();
 }
 
@@ -1396,6 +1462,7 @@ function handleSpeakingRecognitionError(turnIdentity) {
   speakingUi.listening = false;
   speakingUi.feedback = { type: 'info', message: '语音识别暂不可用，请使用“我说完了”继续。' };
   renderSpeakingPractice();
+  announceStatus('语音识别暂不可用，已切换为手动自评。');
 }
 
 function handleSpeakingRecognitionEnd(turnIdentity) {
@@ -1404,6 +1471,7 @@ function handleSpeakingRecognitionEnd(turnIdentity) {
   speakingUi.listening = false;
   speakingUi.feedback = { type: 'info', message: '没有听到完整句子，请重试或使用自评。' };
   renderSpeakingPractice();
+  announceStatus('没有听到完整句子，请重试或使用自评。');
 }
 
 function recordCurrentSpeakingAttempt(result) {
@@ -1435,6 +1503,13 @@ function advanceSpeakingFlow() {
   speakingSession = advanceSpeakingSession(speakingSession, speakingScenario);
   resetSpeakingTurnUi();
   renderSpeakingPractice();
+
+  if (speakingSession.pass === 'complete') {
+    announceStatus('三遍口语练习完成。');
+  } else {
+    const meta = speakingPassMeta(speakingSession.pass);
+    announceStatus(`${meta.title}，第 ${speakingSession.turnIndex + 1} 轮。`);
+  }
 
   const next = currentSpeakingTurn(speakingSession, speakingScenario);
   if (next?.systemTurn) playSpeakingTurn({ autoAdvance: true });
@@ -1496,6 +1571,16 @@ function deterministicSpeakingScenario(pack, currentScenarioId) {
   return pack.scenarios[(index + 1 + pack.scenarios.length) % pack.scenarios.length];
 }
 
+function recommendedScenarioForLesson(lessonId) {
+  const pack = dialoguePacks.find((item) => item.lessonId === lessonId);
+  if (!pack?.scenarios?.length) return null;
+  const due = buildSpeakingReviewQueue(speakingProgress, { lessonId, today: todayKey() });
+  const dueScenario = due.length
+    ? pack.scenarios.find((scenario) => scenario.id === due[0].scenarioId)
+    : null;
+  return dueScenario || pack.scenarios[0];
+}
+
 function exitSpeakingSession() {
   speechOutput.cancel();
   speechInput.abort();
@@ -1504,6 +1589,7 @@ function exitSpeakingSession() {
   speakingWhitelist = null;
   speakingUi = emptySpeakingUi();
   speakingModeNotice = '';
+  lastFocusedSpeakingIdentity = '';
   navigate('speaking');
   render();
 }
@@ -2156,6 +2242,22 @@ function focusDrillNext() {
   queueMicrotask(() => app.querySelector('[data-action="next-drill"]')?.focus());
 }
 
+function focusActiveSpeakingTurn() {
+  if (!speakingSession || speakingSession.pass === 'complete') return;
+  const identity = `${speakingSession.scenarioId}:${speakingSession.pass}:${speakingSession.turnIndex}`;
+  if (identity === lastFocusedSpeakingIdentity) return;
+  lastFocusedSpeakingIdentity = identity;
+  queueMicrotask(() => app.querySelector('.dialogue-turn.is-active')?.focus());
+}
+
+function announceStatus(message) {
+  if (!statusLive) return;
+  statusLive.textContent = '';
+  queueMicrotask(() => {
+    statusLive.textContent = String(message || '');
+  });
+}
+
 function handleDrillShortcut(event) {
   if (event.key !== 'Enter') return;
   if (drillSession?.feedback?.type !== 'ok') return;
@@ -2164,6 +2266,12 @@ function handleDrillShortcut(event) {
   if (!action && event.target?.closest?.('button, input, textarea, select, a')) return;
   event.preventDefault();
   nextDrillItem();
+}
+
+function handleSpeakingShortcut(event) {
+  if (event.key !== 'Escape' || route !== 'speaking' || !speakingSession) return;
+  event.preventDefault();
+  exitSpeakingSession();
 }
 
 function answerTokens(value) {
@@ -2293,6 +2401,7 @@ function saveSettingsFromForm(form) {
   settings = next;
   saveJson(SETTINGS_KEY, settings);
   renderSettings();
+  announceStatus(aiConnection.message);
 }
 
 function updateProviderFields(provider) {
@@ -2349,6 +2458,7 @@ function updateAiStatusInDom() {
   if (!element) return;
   element.className = `ai-status ${aiConnection.state}`;
   element.textContent = aiConnection.message;
+  announceStatus(aiConnection.message);
 }
 
 function localAiFailureMessage(reason) {
@@ -2363,15 +2473,27 @@ function localAiFailureMessage(reason) {
 }
 
 function loadJson(key, fallback) {
+  let raw;
   try {
-    return JSON.parse(localStorage.getItem(key)) || fallback;
+    raw = localStorage.getItem(key);
+  } catch {
+    raw = memoryStorage.get(key) || null;
+  }
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) || fallback;
   } catch {
     return fallback;
   }
 }
 
 function saveJson(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  const serialized = JSON.stringify(value);
+  try {
+    localStorage.setItem(key, serialized);
+  } catch {
+    memoryStorage.set(key, serialized);
+  }
 }
 
 function escapeHtml(value) {

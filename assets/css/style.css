@@ -32,6 +32,18 @@
   box-sizing: border-box;
 }
 
+.sr-status {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 html {
   min-height: 100%;
   background: var(--bg);
@@ -1059,6 +1071,48 @@ h3 {
   gap: 14px;
 }
 
+.review-sections {
+  display: grid;
+  gap: 14px;
+}
+
+.review-section {
+  margin-bottom: 0;
+}
+
+.review-section-heading,
+.review-speaking-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.review-section-heading {
+  margin-bottom: 12px;
+}
+
+.review-section-heading h2,
+.review-speaking-item h3 {
+  margin-bottom: 4px;
+}
+
+.review-list {
+  display: grid;
+  gap: 9px;
+}
+
+.review-speaking-item {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fffaf2;
+}
+
+.review-speaking-item .meta {
+  margin-bottom: 0;
+}
+
 .review-card {
   display: grid;
   gap: 12px;
@@ -1630,6 +1684,15 @@ textarea.answer-input {
   .provider-grid,
   .settings-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .review-speaking-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .review-speaking-item button {
+    width: 100%;
   }
 }
 

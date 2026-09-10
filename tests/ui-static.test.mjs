@@ -296,6 +296,38 @@ test('guided speaking visual target uses a wide transcript, coach rail, voice ba
   assert.match(cssSource, /@media\s*\(max-width:\s*820px\)[\s\S]*\.speaking-layout\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
 });
 
+test('speaking accessibility uses one dedicated announcer, focus management, and explicit voice states', async () => {
+  const indexSource = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
+  const cssSource = await readFile(new URL('../assets/css/style.css', import.meta.url), 'utf8');
+
+  assert.equal((indexSource.match(/aria-live="polite"/g) || []).length, 1);
+  assert.match(indexSource, /id="status-live"/);
+  assert.match(appSource, /function announceStatus\(/);
+  assert.match(appSource, /function focusActiveSpeakingTurn\(/);
+  assert.match(appSource, /\.dialogue-turn\.is-active/);
+  assert.match(appSource, /data-action="stop-recognition"/);
+  assert.match(appSource, /正在听你说/);
+  assert.match(appSource, /aria-pressed="\$\{speakingUi\.slow/);
+  assert.match(appSource, /aria-pressed="\$\{speakingUi\.revealed/);
+  assert.match(cssSource, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+});
+
+test('review and storage migration keep legacy learning data separate from current-Part speaking review', async () => {
+  const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
+
+  assert.match(appSource, /const STORAGE_KEY = 'english_learning_v2_progress';/);
+  assert.match(appSource, /const SPEAKING_PROGRESS_KEY = 'english_learning_v3_speaking_progress';/);
+  assert.match(appSource, /buildSpeakingReviewQueue\(speakingProgress, \{ lessonId:/);
+  assert.match(appSource, /function recommendedScenarioForLesson\(/);
+  assert.match(appSource, /本课待复说/);
+  assert.match(appSource, /旧课复习/);
+  assert.match(appSource, /错词/);
+  assert.match(appSource, /辅助练习/);
+  assert.match(appSource, /const memoryStorage = new Map\(\);/);
+  assert.match(appSource, /catch \{[\s\S]*memoryStorage\.set\(/);
+});
+
 test('grammar and question practice screens include a top exit action', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
 
