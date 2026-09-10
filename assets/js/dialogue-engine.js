@@ -64,6 +64,7 @@ function hasSourceIds(item) {
 export function validateDialoguePack(pack, whitelist) {
   const errors = [];
   const lessonId = pack?.lessonId;
+  const scenarios = Array.isArray(pack?.scenarios) ? pack.scenarios : [];
 
   if (!hasRequiredTextFields(pack, ['lessonId'])
       || pack.version !== 1
@@ -74,8 +75,10 @@ export function validateDialoguePack(pack, whitelist) {
   }
 
   const scenarioIds = new Set();
-  for (const scenario of pack?.scenarios || []) {
+  for (const scenario of scenarios) {
     const scenarioId = scenario?.id;
+    const turns = Array.isArray(scenario?.turns) ? scenario.turns : [];
+    const variantItems = Array.isArray(scenario?.variants) ? scenario.variants : [];
     if (scenarioIds.has(scenarioId)) {
       errors.push(dialogueShapeError(lessonId, scenarioId, undefined, 'duplicate_scenario_id'));
     }
@@ -92,7 +95,7 @@ export function validateDialoguePack(pack, whitelist) {
     }
 
     const turnIds = new Set();
-    for (const [index, item] of (scenario.turns || []).entries()) {
+    for (const [index, item] of turns.entries()) {
       const turnId = item?.id;
       if (turnIds.has(turnId)) {
         errors.push(dialogueShapeError(lessonId, scenarioId, turnId, 'duplicate_turn_id'));
@@ -124,7 +127,7 @@ export function validateDialoguePack(pack, whitelist) {
     }
 
     const variants = new Map();
-    for (const item of scenario.variants || []) {
+    for (const item of variantItems) {
       if (variants.has(item?.id)) {
         errors.push(dialogueShapeError(lessonId, scenarioId, undefined, 'duplicate_variant_id'));
       }
@@ -134,7 +137,7 @@ export function validateDialoguePack(pack, whitelist) {
       }
     }
 
-    for (const item of scenario.turns || []) {
+    for (const item of turns) {
       for (const variantId of item?.variantIds || []) {
         if (!variants.has(variantId)) {
           errors.push(dialogueShapeError(lessonId, scenarioId, item.id, 'unknown_variant_id'));
@@ -142,11 +145,11 @@ export function validateDialoguePack(pack, whitelist) {
       }
     }
 
-    for (const item of scenario.variants || []) {
+    for (const item of variantItems) {
       if (whitelist && typeof item?.en === 'string') {
         const result = validateTextAgainstWhitelist(item.en, whitelist);
         if (!result.valid) {
-          const owner = (scenario.turns || []).find((candidate) => candidate.variantIds?.includes(item.id));
+          const owner = turns.find((candidate) => candidate.variantIds?.includes(item.id));
           errors.push({
             code: 'unknown_token',
             lessonId,
