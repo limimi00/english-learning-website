@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { lessons } from '../data/lessons.js';
+import { dialoguePacks, getDialoguePack } from '../data/dialogues.js';
 import {
   buildLessonWhitelist,
   buildLessonWhitelists,
   tokenizeCourseEnglish,
+  validateDialoguePack,
+  validateDialoguePacks,
   validateTextAgainstWhitelist,
 } from '../assets/js/dialogue-engine.js';
 
@@ -34,4 +37,102 @@ test('validation reports an exact unknown token', () => {
     tokens: ['i', 'was', 'busy'],
     invalidTokens: ['was'],
   });
+});
+
+test('every Part has the required fallback scenarios with alternating four-to-six-turn dialogues', () => {
+  const requiredScenarioIds = new Map([
+    ['part-1', ['meet-colleague', 'feelings', 'objects-colors']],
+    ['part-2', ['breakfast', 'daily-routine', 'home-work']],
+    ['part-3', ['ability', 'ask-help', 'permission']],
+    ['part-4', ['last-night', 'yesterday', 'free-time']],
+    ['part-5', ['last-weekend', 'travel', 'past-actions']],
+    ['part-6', ['hotel-room', 'home-items', 'past-place']],
+  ]);
+
+  assert.deepEqual(dialoguePacks.map((pack) => pack.lessonId), lessons.map((lesson) => lesson.id));
+  dialoguePacks.forEach((pack) => {
+    assert.equal(pack.version, 1);
+    assert.deepEqual(pack.scenarios.map((scenario) => scenario.id), requiredScenarioIds.get(pack.lessonId));
+    pack.scenarios.forEach((scenario) => {
+      assert.ok(scenario.titleCn && scenario.goalCn);
+      assert.ok(scenario.turns.length >= 4 && scenario.turns.length <= 6);
+      scenario.turns.forEach((turn, index) => {
+        assert.equal(turn.role, index % 2 === 0 ? 'A' : 'B');
+        assert.ok(turn.id && turn.en && turn.cn && turn.intentCn && turn.patternId);
+        assert.ok(Array.isArray(turn.sourceIds) && turn.sourceIds.length > 0);
+        assert.ok(Array.isArray(turn.variantIds));
+      });
+      scenario.variants.forEach((variant) => {
+        assert.ok(variant.id && variant.en && variant.cn && variant.intentCn && variant.patternId);
+        assert.ok(Array.isArray(variant.sourceIds) && variant.sourceIds.length > 0);
+      });
+      const variantIds = new Set(scenario.variants.map((variant) => variant.id));
+      assert.ok(scenario.turns.some((turn) => turn.variantIds.length > 0));
+      assert.ok(scenario.turns.every((turn) => turn.variantIds.every((id) => variantIds.has(id))));
+    });
+  });
+});
+
+test('every bundled English line and canonical variant stays inside its own Part whitelist', () => {
+  const result = validateDialoguePacks(dialoguePacks, buildLessonWhitelists(lessons));
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.valid, true);
+});
+
+test('dialogue validation reports cross-Part English with scenario and turn ids', () => {
+  const badPack = structuredClone(dialoguePacks[0]);
+  badPack.scenarios[0].turns[0].en = 'I was busy.';
+  const result = validateDialoguePacks([badPack], buildLessonWhitelists(lessons));
+
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.errors[0], {
+    code: 'unknown_token',
+    lessonId: 'part-1',
+    scenarioId: 'meet-colleague',
+    turnId: 'turn-1',
+    invalidTokens: ['was'],
+  });
+});
+
+test('dialogue validation rejects unknown English in approved-id variants', () => {
+  const badPack = structuredClone(dialoguePacks[0]);
+  const variant = badPack.scenarios[0].variants[0];
+  variant.en = 'I was busy.';
+  const result = validateDialoguePack(badPack, buildLessonWhitelists(lessons).get('part-1'));
+
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.errors[0], {
+    code: 'unknown_token',
+    lessonId: 'part-1',
+    scenarioId: 'meet-colleague',
+    turnId: 'turn-1',
+    variantId: variant.id,
+    invalidTokens: ['was'],
+  });
+});
+
+test('dialogue validation rejects duplicate ids, missing fields, broken alternation, and invalid turn counts', () => {
+  const whitelist = buildLessonWhitelists(lessons).get('part-1');
+  const cases = [
+    ['duplicate scenario id', (pack) => { pack.scenarios[1].id = pack.scenarios[0].id; }],
+    ['duplicate turn id', (pack) => { pack.scenarios[0].turns[1].id = pack.scenarios[0].turns[0].id; }],
+    ['duplicate variant id', (pack) => { pack.scenarios[0].variants.push(structuredClone(pack.scenarios[0].variants[0])); }],
+    ['missing turn field', (pack) => { delete pack.scenarios[0].turns[0].intentCn; }],
+    ['non-alternating roles', (pack) => { pack.scenarios[0].turns[1].role = 'A'; }],
+    ['too few turns', (pack) => { pack.scenarios[0].turns.length = 3; }],
+    ['unknown variant id', (pack) => { pack.scenarios[0].turns[0].variantIds = ['missing-variant']; }],
+  ];
+
+  for (const [name, mutate] of cases) {
+    const badPack = structuredClone(dialoguePacks[0]);
+    mutate(badPack);
+    const result = validateDialoguePack(badPack, whitelist);
+    assert.equal(result.valid, false, name);
+    assert.ok(result.errors.some((error) => error.code === 'invalid_dialogue_shape'), name);
+  }
+});
+
+test('getDialoguePack returns only the canonical pack for an approved lesson id', () => {
+  assert.equal(getDialoguePack('part-3'), dialoguePacks[2]);
+  assert.equal(getDialoguePack('part-7'), undefined);
 });
