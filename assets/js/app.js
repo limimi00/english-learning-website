@@ -12,6 +12,7 @@ import {
 import {
   LOCAL_AI_PRESETS,
   normalizeLocalAiSettings,
+  selectApprovedMove,
   testLocalAiConnection,
   validateLoopbackBaseUrl,
 } from './local-ai.js';
@@ -54,6 +55,7 @@ let speakingSession = null;
 let speakingScenario = null;
 let speakingWhitelist = null;
 let speakingUi = emptySpeakingUi();
+let speakingModeNotice = '';
 let activeFeedback = null;
 let session = null;
 let drillSession = null;
@@ -93,6 +95,7 @@ navButtons.forEach((button) => {
     speakingScenario = null;
     speakingWhitelist = null;
     speakingUi = emptySpeakingUi();
+    speakingModeNotice = '';
     setActiveNav();
     render();
   });
@@ -124,6 +127,7 @@ app.addEventListener('click', (event) => {
     speakingScenario = null;
     speakingWhitelist = null;
     speakingUi = emptySpeakingUi();
+    speakingModeNotice = '';
     setDailyLesson(action.dataset.lessonId);
     activeLessonId = currentDailyLessonId();
     render();
@@ -375,6 +379,7 @@ function renderSpeakingPractice() {
       </header>
 
       <div class="speaking-progress" aria-label="练习进度">
+        ${speakingModeNotice ? `<p class="speaking-mode">${escapeHtml(speakingModeNotice)}</p>` : ''}
         <div class="pass-steps">
           ${speakingPassSteps(speakingSession.pass)}
         </div>
@@ -1174,7 +1179,7 @@ function startLessonDaily(lessonId) {
   startDaily(settings.dailyLimit, lessonId);
 }
 
-function startSpeaking(lessonId, scenarioId) {
+function startSpeaking(lessonId, scenarioId, modeNotice = '') {
   const nextLessonId = lessons.some((lesson) => lesson.id === lessonId) ? lessonId : currentDailyLessonId();
   const pack = dialoguePacks.find((item) => item.lessonId === nextLessonId);
   const scenario = pack?.scenarios.find((item) => item.id === scenarioId) || pack?.scenarios[0];
@@ -1194,6 +1199,7 @@ function startSpeaking(lessonId, scenarioId) {
     whitelistVersion: speakingWhitelist.version,
   });
   speakingUi = emptySpeakingUi();
+  speakingModeNotice = modeNotice;
   render();
   playSpeakingTurn({ autoAdvance: true });
 }
@@ -1439,12 +1445,55 @@ function restartSpeakingScenario() {
   startSpeaking(speakingSession.lessonId, speakingScenario.id);
 }
 
-function startNextSpeakingScenario() {
+async function startNextSpeakingScenario() {
   if (!speakingSession || !speakingScenario) return;
   const pack = dialoguePacks.find((item) => item.lessonId === speakingSession.lessonId);
-  const index = pack?.scenarios.findIndex((item) => item.id === speakingScenario.id) ?? -1;
-  const next = pack?.scenarios[(index + 1) % pack.scenarios.length];
-  if (next) startSpeaking(speakingSession.lessonId, next.id);
+  if (!pack) return;
+  const fallback = deterministicSpeakingScenario(pack, speakingScenario.id);
+  if (!fallback) return;
+
+  const candidateIds = pack.scenarios
+    .map((item) => item.id)
+    .filter((id) => id !== speakingScenario.id);
+  const canUseLocalAi = settings.localAi.enabled
+    && aiConnection.state === 'ok'
+    && Boolean(settings.localAi.model)
+    && candidateIds.length > 0;
+
+  if (!canUseLocalAi) {
+    startSpeaking(speakingSession.lessonId, fallback.id, '已使用基础模式');
+    return;
+  }
+
+  speakingModeNotice = '本机 AI 正在从本课场景中选择…';
+  renderSpeakingComplete();
+  const result = await selectApprovedMove({
+    settings: settings.localAi,
+    candidateIds,
+    state: {
+      lessonId: speakingSession.lessonId,
+      scenarioId: speakingScenario.id,
+      turnIndex: speakingSession.turnIndex,
+      supportLevel: speakingUi.supportUsed ? 'revealed' : 'standard',
+    },
+    signal: routeAbortController.signal,
+  });
+  if (result.reason === 'aborted') return;
+
+  const selected = result.ok
+    ? pack.scenarios.find((item) => item.id === result.moveId)
+    : null;
+  if (!selected) {
+    startSpeaking(speakingSession.lessonId, fallback.id, '已使用基础模式');
+    return;
+  }
+  startSpeaking(speakingSession.lessonId, selected.id, '本机 AI 已选择本课练习');
+}
+
+function deterministicSpeakingScenario(pack, currentScenarioId) {
+  if (!Array.isArray(pack?.scenarios) || !pack.scenarios.length) return null;
+  const index = pack.scenarios.findIndex((item) => item.id === currentScenarioId);
+  return pack.scenarios[(index + 1 + pack.scenarios.length) % pack.scenarios.length];
 }
 
 function exitSpeakingSession() {
@@ -1454,6 +1503,7 @@ function exitSpeakingSession() {
   speakingScenario = null;
   speakingWhitelist = null;
   speakingUi = emptySpeakingUi();
+  speakingModeNotice = '';
   navigate('speaking');
   render();
 }

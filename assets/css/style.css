@@ -692,6 +692,13 @@ h3 {
   margin: 12px 0 8px;
 }
 
+.speaking-mode {
+  margin: 0 0 10px;
+  color: var(--moss);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 .speaking-progress .meta {
   margin-bottom: 0;
   text-align: right;

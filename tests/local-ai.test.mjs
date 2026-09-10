@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   LOCAL_AI_PRESETS,
   normalizeLocalAiSettings,
@@ -460,4 +461,17 @@ test('model-selection timeout and caller cancellation cover pending JSON bodies'
   await bodyStarted;
   controller.abort();
   assert.deepEqual(await pending, { ok: false, reason: 'aborted' });
+});
+
+test('app integration sends only approved ids and minimal current-Part state with deterministic fallback', async () => {
+  const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
+
+  assert.match(appSource, /selectApprovedMove/);
+  assert.match(appSource, /const candidateIds = pack\.scenarios/);
+  assert.match(appSource, /state:\s*\{\s*lessonId:[\s\S]*scenarioId:[\s\S]*turnIndex:[\s\S]*supportLevel:/);
+  assert.match(appSource, /function deterministicSpeakingScenario\(/);
+  assert.match(appSource, /const fallback = deterministicSpeakingScenario\(/);
+  assert.match(appSource, /已使用基础模式/);
+  assert.match(appSource, /routeAbortController\.signal/);
+  assert.doesNotMatch(appSource, /result\.(?:content|text|message)/);
 });
