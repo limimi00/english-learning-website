@@ -1,7 +1,14 @@
+import { addDays, todayKey } from './study-engine.js';
+
 const SPELLING_VARIANTS = new Map([
   ['centre', 'center'],
   ['grey', 'gray'],
 ]);
+
+const SPEAKING_PASSES = ['listen', 'role-a', 'role-b', 'complete'];
+const SPEAKING_REVIEW_INTERVAL_DAYS = [1, 3, 7];
+const SPEAKING_SKILLS = ['listen', 'repeat', 'guided-produce', 'independent-produce'];
+const UNASSESSED_SPEAKING_RESULTS = new Set(['technical-fallback', 'skipped']);
 
 export function tokenizeCourseEnglish(value) {
   return String(value || '')
@@ -179,4 +186,157 @@ export function validateDialoguePacks(packs, whitelists) {
   }
 
   return { valid: errors.length === 0, errors };
+}
+
+export function createSpeakingSession(scenario, options = {}) {
+  const now = options.now ?? new Date();
+  return {
+    lessonId: options.lessonId,
+    courseVersion: options.courseVersion ?? 1,
+    whitelistVersion: options.whitelistVersion ?? 1,
+    scenarioId: scenario.id,
+    pass: 'listen',
+    turnIndex: 0,
+    startedDate: typeof now === 'string' ? now : todayKey(now),
+  };
+}
+
+export function currentSpeakingTurn(session, scenario) {
+  if (session.pass === 'complete') return null;
+  const turn = scenario.turns[session.turnIndex];
+  if (!turn) return null;
+
+  const learnerRole = session.pass === 'role-a'
+    ? 'A'
+    : session.pass === 'role-b' ? 'B' : null;
+  const learnerTurn = turn.role === learnerRole;
+  return {
+    ...turn,
+    learnerTurn,
+    systemTurn: session.pass === 'listen' || !learnerTurn,
+  };
+}
+
+export function advanceSpeakingSession(session, scenario) {
+  if (session.pass === 'complete') return { ...session };
+
+  if (session.turnIndex < scenario.turns.length - 1) {
+    return { ...session, turnIndex: session.turnIndex + 1 };
+  }
+
+  const passIndex = SPEAKING_PASSES.indexOf(session.pass);
+  return {
+    ...session,
+    pass: SPEAKING_PASSES[Math.min(passIndex + 1, SPEAKING_PASSES.length - 1)],
+    turnIndex: 0,
+  };
+}
+
+function emptySpeakingEvidence() {
+  return Object.fromEntries(SPEAKING_SKILLS.map((skill) => [skill, {
+    attemptCount: 0,
+    correctCount: 0,
+    incorrectCount: 0,
+    technicalFallbackCount: 0,
+    skippedCount: 0,
+    supportUsedCount: 0,
+    lastResult: null,
+    lastDate: null,
+  }]));
+}
+
+function updateSpeakingEvidence(evidence, attempt, supportUsed) {
+  const current = evidence[attempt.skill];
+  const unassessed = UNASSESSED_SPEAKING_RESULTS.has(attempt.result);
+  return {
+    ...evidence,
+    [attempt.skill]: {
+      ...current,
+      attemptCount: current.attemptCount + 1,
+      correctCount: current.correctCount + (!unassessed && attempt.result !== 'incorrect' ? 1 : 0),
+      incorrectCount: current.incorrectCount + (attempt.result === 'incorrect' ? 1 : 0),
+      technicalFallbackCount: current.technicalFallbackCount + (attempt.result === 'technical-fallback' ? 1 : 0),
+      skippedCount: current.skippedCount + (attempt.result === 'skipped' ? 1 : 0),
+      supportUsedCount: current.supportUsedCount + (supportUsed ? 1 : 0),
+      lastResult: attempt.result,
+      lastDate: attempt.date,
+    },
+  };
+}
+
+export function nextSpeakingReviewDate(dateKey, reviewLevel) {
+  const interval = SPEAKING_REVIEW_INTERVAL_DAYS[reviewLevel - 1];
+  return interval ? addDays(dateKey, interval) : null;
+}
+
+export function recordSpeakingAttempt(progress = {}, attempt) {
+  if (!SPEAKING_SKILLS.includes(attempt.skill)) {
+    throw new TypeError(`Unknown speaking skill: ${attempt.skill}`);
+  }
+
+  const key = `${attempt.lessonId}:${attempt.scenarioId}:${attempt.turnId}`;
+  const current = progress[key] || {};
+  const base = {
+    kind: 'speaking',
+    lessonId: attempt.lessonId,
+    scenarioId: attempt.scenarioId,
+    turnId: attempt.turnId,
+    patternId: attempt.patternId,
+    status: 'new',
+    reviewLevel: 0,
+    wrongCount: 0,
+    dueDate: null,
+    lastPracticed: null,
+    evidence: emptySpeakingEvidence(),
+    history: [],
+    ...current,
+  };
+  const supportUsed = Boolean(
+    attempt.supportUsed || attempt.fullAnswerRevealed || attempt.revealedFullAnswer,
+  );
+  const unassessed = UNASSESSED_SPEAKING_RESULTS.has(attempt.result);
+  const incorrect = attempt.result === 'incorrect';
+  const nextLevel = incorrect
+    ? 0
+    : Math.min(base.reviewLevel + (unassessed ? 0 : 1), SPEAKING_REVIEW_INTERVAL_DAYS.length + 1);
+  const dueDate = unassessed
+    ? base.dueDate
+    : incorrect
+      ? addDays(attempt.date, 1)
+      : nextSpeakingReviewDate(attempt.date, nextLevel);
+
+  return {
+    ...progress,
+    [key]: {
+      ...base,
+      patternId: attempt.patternId ?? base.patternId,
+      status: unassessed
+        ? base.status
+        : nextLevel > SPEAKING_REVIEW_INTERVAL_DAYS.length ? 'mastered' : incorrect ? 'learning' : 'review',
+      reviewLevel: nextLevel,
+      wrongCount: base.wrongCount + (incorrect ? 1 : 0),
+      dueDate,
+      lastPracticed: attempt.date,
+      evidence: updateSpeakingEvidence(base.evidence, attempt, supportUsed),
+      history: [...base.history, {
+        date: attempt.date,
+        skill: attempt.skill,
+        result: attempt.result,
+        supportUsed,
+      }],
+    },
+  };
+}
+
+export function buildSpeakingReviewQueue(progress = {}, options = {}) {
+  const today = options.today ?? todayKey();
+  return Object.entries(progress)
+    .filter(([, state]) => state?.kind === 'speaking'
+      && typeof state.dueDate === 'string'
+      && state.dueDate <= today
+      && (!options.lessonId || state.lessonId === options.lessonId))
+    .map(([key, state]) => ({ key, ...state }))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate)
+      || (b.wrongCount || 0) - (a.wrongCount || 0)
+      || a.key.localeCompare(b.key));
 }

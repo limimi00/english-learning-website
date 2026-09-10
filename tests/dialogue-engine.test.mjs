@@ -3,8 +3,14 @@ import assert from 'node:assert/strict';
 import { lessons } from '../data/lessons.js';
 import { dialoguePacks, getDialoguePack } from '../data/dialogues.js';
 import {
+  advanceSpeakingSession,
   buildLessonWhitelist,
   buildLessonWhitelists,
+  buildSpeakingReviewQueue,
+  createSpeakingSession,
+  currentSpeakingTurn,
+  nextSpeakingReviewDate,
+  recordSpeakingAttempt,
   tokenizeCourseEnglish,
   validateDialoguePack,
   validateDialoguePacks,
@@ -192,4 +198,193 @@ test('dialogue validation reports malformed container fields without throwing', 
 test('getDialoguePack returns only the canonical pack for an approved lesson id', () => {
   assert.equal(getDialoguePack('part-3'), dialoguePacks[2]);
   assert.equal(getDialoguePack('part-7'), undefined);
+});
+
+test('speaking session advances listen to role A to role B to complete without mutation', () => {
+  const scenario = dialoguePacks[0].scenarios[0];
+  const originalScenario = structuredClone(scenario);
+  const initial = createSpeakingSession(scenario, {
+    lessonId: 'part-1',
+    courseVersion: 7,
+    whitelistVersion: 3,
+    now: '2026-09-10',
+  });
+  let session = initial;
+
+  assert.deepEqual(session, {
+    lessonId: 'part-1',
+    courseVersion: 7,
+    whitelistVersion: 3,
+    scenarioId: 'meet-colleague',
+    pass: 'listen',
+    turnIndex: 0,
+    startedDate: '2026-09-10',
+  });
+  for (let index = 0; index < scenario.turns.length; index += 1) {
+    const previous = session;
+    session = advanceSpeakingSession(session, scenario);
+    assert.notEqual(session, previous);
+  }
+  assert.equal(session.pass, 'role-a');
+  assert.equal(session.turnIndex, 0);
+  for (let index = 0; index < scenario.turns.length; index += 1) {
+    session = advanceSpeakingSession(session, scenario);
+  }
+  assert.equal(session.pass, 'role-b');
+  for (let index = 0; index < scenario.turns.length; index += 1) {
+    session = advanceSpeakingSession(session, scenario);
+  }
+  assert.equal(session.pass, 'complete');
+  assert.deepEqual(initial, {
+    lessonId: 'part-1',
+    courseVersion: 7,
+    whitelistVersion: 3,
+    scenarioId: 'meet-colleague',
+    pass: 'listen',
+    turnIndex: 0,
+    startedDate: '2026-09-10',
+  });
+  assert.deepEqual(scenario, originalScenario);
+
+  const completed = advanceSpeakingSession(session, scenario);
+  assert.notEqual(completed, session);
+  assert.deepEqual(completed, session);
+});
+
+test('currentSpeakingTurn identifies learner and system ownership in each pass', () => {
+  const scenario = dialoguePacks[0].scenarios[0];
+  const roleATurn = currentSpeakingTurn({ pass: 'role-a', turnIndex: 0 }, scenario);
+  const roleBTurn = currentSpeakingTurn({ pass: 'role-b', turnIndex: 0 }, scenario);
+  const listenTurn = currentSpeakingTurn({ pass: 'listen', turnIndex: 0 }, scenario);
+
+  assert.equal(roleATurn.learnerTurn, scenario.turns[0].role === 'A');
+  assert.equal(roleATurn.systemTurn, false);
+  assert.equal(roleBTurn.learnerTurn, false);
+  assert.equal(roleBTurn.systemTurn, true);
+  assert.equal(listenTurn.learnerTurn, false);
+  assert.equal(listenTurn.systemTurn, true);
+  assert.equal(currentSpeakingTurn({ pass: 'complete', turnIndex: 0 }, scenario), null);
+  assert.equal(Object.hasOwn(scenario.turns[0], 'learnerTurn'), false);
+});
+
+test('speaking progress stores four skill evidence streams without touching word progress', () => {
+  const wordProgress = { teacher: { status: 'mastered', correctCount: 8 } };
+  let progress = wordProgress;
+  const skills = ['listen', 'repeat', 'guided-produce', 'independent-produce'];
+
+  for (const [index, skill] of skills.entries()) {
+    const previous = progress;
+    progress = recordSpeakingAttempt(progress, {
+      lessonId: 'part-1',
+      scenarioId: 'meet-colleague',
+      turnId: 'turn-1',
+      patternId: 'p1-where-from',
+      skill,
+      result: 'correct',
+      supportUsed: index === 2,
+      date: `2026-09-${String(10 + index).padStart(2, '0')}`,
+    });
+    assert.notEqual(progress, previous);
+  }
+
+  const line = progress['part-1:meet-colleague:turn-1'];
+  assert.deepEqual(progress.teacher, wordProgress.teacher);
+  assert.notEqual(progress.teacher, line);
+  assert.deepEqual(Object.keys(line.evidence), skills);
+  assert.equal(line.evidence.listen.attemptCount, 1);
+  assert.equal(line.evidence.repeat.attemptCount, 1);
+  assert.equal(line.evidence['guided-produce'].supportUsedCount, 1);
+  assert.equal(line.evidence['independent-produce'].supportUsedCount, 0);
+  assert.equal(line.patternId, 'p1-where-from');
+  assert.deepEqual(wordProgress, { teacher: { status: 'mastered', correctCount: 8 } });
+});
+
+test('technical voice failure and skipped turns never increment speaking wrongCount', () => {
+  let progress = recordSpeakingAttempt({}, {
+    lessonId: 'part-1',
+    scenarioId: 'meet-colleague',
+    turnId: 'turn-1',
+    skill: 'guided-produce',
+    result: 'technical-fallback',
+    supportUsed: true,
+    date: '2026-09-10',
+  });
+  progress = recordSpeakingAttempt(progress, {
+    lessonId: 'part-1',
+    scenarioId: 'meet-colleague',
+    turnId: 'turn-1',
+    skill: 'guided-produce',
+    result: 'skipped',
+    supportUsed: false,
+    date: '2026-09-10',
+  });
+
+  const line = progress['part-1:meet-colleague:turn-1'];
+  assert.equal(line.wrongCount, 0);
+  assert.equal(line.evidence['guided-produce'].technicalFallbackCount, 1);
+  assert.equal(line.evidence['guided-produce'].skippedCount, 1);
+  assert.equal(line.dueDate, null);
+});
+
+test('revealing the full answer records support and an incorrect attempt schedules tomorrow', () => {
+  const progress = recordSpeakingAttempt({}, {
+    lessonId: 'part-1',
+    scenarioId: 'meet-colleague',
+    turnId: 'turn-1',
+    skill: 'independent-produce',
+    result: 'incorrect',
+    fullAnswerRevealed: true,
+    date: '2026-09-10',
+  });
+
+  const line = progress['part-1:meet-colleague:turn-1'];
+  assert.equal(line.wrongCount, 1);
+  assert.equal(line.dueDate, '2026-09-11');
+  assert.equal(line.history[0].supportUsed, true);
+  assert.equal(line.evidence['independent-produce'].supportUsedCount, 1);
+});
+
+test('speaking review follows exact one, three, and seven day intervals', () => {
+  assert.equal(nextSpeakingReviewDate('2026-09-10', 1), '2026-09-11');
+  assert.equal(nextSpeakingReviewDate('2026-09-11', 2), '2026-09-14');
+  assert.equal(nextSpeakingReviewDate('2026-09-14', 3), '2026-09-21');
+  assert.equal(nextSpeakingReviewDate('2026-09-21', 4), null);
+
+  let progress = {};
+  for (const date of ['2026-09-10', '2026-09-11', '2026-09-14']) {
+    progress = recordSpeakingAttempt(progress, {
+      lessonId: 'part-1', scenarioId: 'meet-colleague', turnId: 'turn-1',
+      skill: 'independent-produce', result: 'correct', supportUsed: false, date,
+    });
+  }
+  assert.equal(progress['part-1:meet-colleague:turn-1'].reviewLevel, 3);
+  assert.equal(progress['part-1:meet-colleague:turn-1'].dueDate, '2026-09-21');
+});
+
+test('speaking review queue contains only due speaking lines in deterministic order', () => {
+  const progress = {
+    teacher: { status: 'review', dueDate: '2026-09-01', wrongCount: 9 },
+    'part-1:feelings:turn-2': {
+      kind: 'speaking', lessonId: 'part-1', scenarioId: 'feelings', turnId: 'turn-2',
+      dueDate: '2026-09-10', wrongCount: 1,
+    },
+    'part-1:meet-colleague:turn-1': {
+      kind: 'speaking', lessonId: 'part-1', scenarioId: 'meet-colleague', turnId: 'turn-1',
+      dueDate: '2026-09-09', wrongCount: 0,
+    },
+    'part-2:breakfast:turn-1': {
+      kind: 'speaking', lessonId: 'part-2', scenarioId: 'breakfast', turnId: 'turn-1',
+      dueDate: '2026-09-09', wrongCount: 4,
+    },
+    'part-1:objects-colors:turn-1': {
+      kind: 'speaking', lessonId: 'part-1', scenarioId: 'objects-colors', turnId: 'turn-1',
+      dueDate: '2026-09-11', wrongCount: 2,
+    },
+  };
+
+  const queue = buildSpeakingReviewQueue(progress, { today: '2026-09-10', lessonId: 'part-1' });
+  assert.deepEqual(queue.map((item) => item.key), [
+    'part-1:meet-colleague:turn-1',
+    'part-1:feelings:turn-2',
+  ]);
 });
