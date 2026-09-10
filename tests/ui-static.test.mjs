@@ -263,6 +263,39 @@ test('navigation uses local vendored image icons and the shell contains no gradi
   assert.doesNotMatch(cssSource, /(?:linear|radial)-gradient\(/);
 });
 
+test('guided speaking screen exposes the complete offline three-pass learner path', async () => {
+  const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
+
+  assert.match(appSource, /createSpeakingSession/);
+  assert.match(appSource, /currentSpeakingTurn/);
+  assert.match(appSource, /advanceSpeakingSession/);
+  assert.match(appSource, /recordSpeakingAttempt/);
+  assert.match(appSource, /validateTextAgainstWhitelist/);
+  assert.match(appSource, /class="speaking-layout"/);
+  assert.match(appSource, /class="conversation-pane"/);
+  assert.match(appSource, /class="coach-rail"/);
+  assert.match(appSource, /class="voice-bar"/);
+  assert.match(appSource, /data-action="speaking-replay"/);
+  assert.match(appSource, /data-action="speaking-slow"/);
+  assert.match(appSource, /data-action="reveal-answer"/);
+  assert.match(appSource, /data-action="start-recognition"/);
+  assert.match(appSource, /data-action="learner-done"/);
+  assert.match(appSource, /data-action="exit-speaking"/);
+  assert.match(appSource, /我说完了/);
+  assert.match(appSource, /本轮请使用本课句型/);
+});
+
+test('guided speaking visual target uses a wide transcript, coach rail, voice bar, and mobile stack', async () => {
+  const cssSource = await readFile(new URL('../assets/css/style.css', import.meta.url), 'utf8');
+
+  assert.match(cssSource, /\.speaking-layout\s*\{[\s\S]*grid-template-columns:/);
+  assert.match(cssSource, /\.conversation-pane\s*\{/);
+  assert.match(cssSource, /\.coach-rail\s*\{/);
+  assert.match(cssSource, /\.voice-bar\s*\{/);
+  assert.match(cssSource, /\.dialogue-turn\.is-active\s*\{/);
+  assert.match(cssSource, /@media\s*\(max-width:\s*820px\)[\s\S]*\.speaking-layout\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+});
+
 test('grammar and question practice screens include a top exit action', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
 

@@ -1,6 +1,14 @@
 import { lessons } from '../../data/lessons.js';
 import { dialoguePacks } from '../../data/dialogues.js';
-import { tokenizeCourseEnglish } from './dialogue-engine.js';
+import {
+  advanceSpeakingSession,
+  buildLessonWhitelist,
+  createSpeakingSession,
+  currentSpeakingTurn,
+  recordSpeakingAttempt,
+  tokenizeCourseEnglish,
+  validateTextAgainstWhitelist,
+} from './dialogue-engine.js';
 import {
   LOCAL_AI_PRESETS,
   normalizeLocalAiSettings,
@@ -42,6 +50,10 @@ const speechInput = createSpeechInput(globalThis);
 let route = 'home';
 let activeLessonId = 'part-1';
 let selectedSpeakingScenarioId = null;
+let speakingSession = null;
+let speakingScenario = null;
+let speakingWhitelist = null;
+let speakingUi = emptySpeakingUi();
 let activeFeedback = null;
 let session = null;
 let drillSession = null;
@@ -77,6 +89,10 @@ navButtons.forEach((button) => {
     activeFeedback = null;
     session = null;
     drillSession = null;
+    speakingSession = null;
+    speakingScenario = null;
+    speakingWhitelist = null;
+    speakingUi = emptySpeakingUi();
     setActiveNav();
     render();
   });
@@ -88,9 +104,26 @@ app.addEventListener('click', (event) => {
 
   const { action: name } = action.dataset;
   if (name === 'start-speaking') startSpeaking(action.dataset.lessonId, action.dataset.scenarioId);
+  if (name === 'speaking-replay') playSpeakingTurn();
+  if (name === 'speaking-slow') toggleSlowSpeech();
+  if (name === 'reveal-answer') revealSpeakingAnswer();
+  if (name === 'start-recognition') startSpeakingRecognition();
+  if (name === 'stop-recognition') stopSpeakingRecognition();
+  if (name === 'learner-done') requestSpeakingSelfCheck();
+  if (name === 'speaking-self-check') finishSpeakingSelfCheck(action.dataset.result);
+  if (name === 'speaking-next') advanceSpeakingFlow();
+  if (name === 'repeat-speaking') restartSpeakingScenario();
+  if (name === 'next-speaking-scenario') startNextSpeakingScenario();
+  if (name === 'exit-speaking') exitSpeakingSession();
   if (name === 'start-daily') startDaily(Number(action.dataset.limit));
   if (name === 'start-custom') startDaily(Number(document.querySelector('#custom-limit')?.value || 15));
   if (name === 'set-daily-lesson') {
+    speechOutput.cancel();
+    speechInput.abort();
+    speakingSession = null;
+    speakingScenario = null;
+    speakingWhitelist = null;
+    speakingUi = emptySpeakingUi();
     setDailyLesson(action.dataset.lessonId);
     activeLessonId = currentDailyLessonId();
     render();
@@ -278,6 +311,11 @@ function renderHome() {
 }
 
 function renderSpeaking() {
+  if (speakingSession && speakingScenario) {
+    renderSpeakingPractice();
+    return;
+  }
+
   const lessonId = currentDailyLessonId();
   const lesson = lessons.find((item) => item.id === lessonId) || lessons[0];
   const pack = dialoguePacks.find((item) => item.lessonId === lesson.id);
@@ -306,6 +344,198 @@ function renderSpeaking() {
           <button class="primary-button" type="button" data-action="start-speaking" data-lesson-id="${lesson.id}" data-scenario-id="${scenario.id}">开始练习</button>
         </article>
       `).join('') || empty('本课对话正在整理中')}
+    </section>
+  `;
+}
+
+function renderSpeakingPractice() {
+  if (speakingSession.pass === 'complete') {
+    renderSpeakingComplete();
+    return;
+  }
+
+  const lesson = lessons.find((item) => item.id === speakingSession.lessonId) || lessons[0];
+  const current = currentSpeakingTurn(speakingSession, speakingScenario);
+  const totalTurns = speakingScenario.turns.length;
+  const passIndex = ['listen', 'role-a', 'role-b'].indexOf(speakingSession.pass);
+  const completedSteps = passIndex * totalTurns + speakingSession.turnIndex;
+  const totalSteps = totalTurns * 3;
+  const percent = Math.round((completedSteps / totalSteps) * 100);
+  const pass = speakingPassMeta(speakingSession.pass);
+
+  app.innerHTML = `
+    <section class="speaking-screen">
+      <header class="speaking-topbar">
+        <div>
+          <p class="eyebrow">Part ${lesson.order} · ${escapeHtml(speakingScenario.titleCn)}</p>
+          <h1>${escapeHtml(pass.title)}</h1>
+          <p class="lead">${escapeHtml(pass.instruction)}</p>
+        </div>
+        <button class="ghost-button" type="button" data-action="exit-speaking">退出练习</button>
+      </header>
+
+      <div class="speaking-progress" aria-label="练习进度">
+        <div class="pass-steps">
+          ${speakingPassSteps(speakingSession.pass)}
+        </div>
+        <div class="progress-line"><span style="width:${percent}%"></span></div>
+        <p class="meta">第 ${speakingSession.turnIndex + 1} / ${totalTurns} 轮 · 你${pass.role ? `扮演 ${pass.role}` : '先听完整对话'}</p>
+      </div>
+
+      <div class="speaking-layout">
+        <section class="conversation-pane">
+          <div class="conversation-heading">
+            <div>
+              <p class="eyebrow">对话记录</p>
+              <h2>一句一句练习</h2>
+            </div>
+            <span class="course-only-badge">只使用本课词汇</span>
+          </div>
+          <div class="dialogue-transcript">
+            ${speakingScenario.turns.map((turn, index) => renderDialogueTurn(turn, index, current)).join('')}
+          </div>
+        </section>
+
+        <aside class="coach-rail">
+          ${renderCoachRail(current)}
+        </aside>
+
+        <footer class="voice-bar">
+          ${renderVoiceBar(current)}
+        </footer>
+      </div>
+    </section>
+  `;
+}
+
+function renderDialogueTurn(turn, index, current) {
+  const active = index === speakingSession.turnIndex;
+  const completed = index < speakingSession.turnIndex;
+  const stateClass = active ? 'is-active' : completed ? 'is-complete' : 'is-upcoming';
+  const learnerTurn = speakingSession.pass === 'role-a'
+    ? turn.role === 'A'
+    : speakingSession.pass === 'role-b' && turn.role === 'B';
+  const revealEnglish = speakingSession.pass === 'listen' || !learnerTurn || completed || (active && speakingUi.revealed);
+  const line = revealEnglish
+    ? `<p class="dialogue-en">${escapeHtml(turn.en)}</p>`
+    : active
+      ? `<p class="dialogue-frame">${escapeHtml(sentenceFrame(turn.en))}</p>`
+      : '<p class="dialogue-locked">轮到这一句时再显示</p>';
+
+  return `
+    <article class="dialogue-turn ${stateClass}" ${active ? 'aria-current="step"' : ''}>
+      <div class="role-marker" aria-label="角色 ${turn.role}">${turn.role}</div>
+      <div class="dialogue-copy">
+        <div class="dialogue-role-row">
+          <strong>${learnerTurn ? `你 · 角色 ${turn.role}` : `搭档 · 角色 ${turn.role}`}</strong>
+          <span>${active ? '当前' : completed ? '已完成' : `第 ${index + 1} 轮`}</span>
+        </div>
+        ${line}
+        <p class="dialogue-cn">${escapeHtml(turn.cn)}</p>
+      </div>
+    </article>
+  `;
+}
+
+function renderCoachRail(current) {
+  const learnerCopy = current.learnerTurn
+    ? `你的任务：${current.intentCn}`
+    : speakingSession.pass === 'listen'
+      ? '先听声音，同时看中英文。'
+      : `现在听角色 ${current.role}，下一句再由你回答。`;
+  const tokens = Array.from(new Set(tokenizeCourseEnglish(current.en)));
+
+  return `
+    <div class="coach-section">
+      <p class="eyebrow">口语教练</p>
+      <h2>${escapeHtml(learnerCopy)}</h2>
+      <p class="meta">${current.learnerTurn ? '先看中文意思，再使用下面的本课词语组织句子。' : '可以重复播放，也可以切换慢速。'}</p>
+    </div>
+    ${current.learnerTurn ? `
+      <div class="coach-section">
+        <h3>句子提示</h3>
+        <p class="sentence-frame">${escapeHtml(sentenceFrame(current.en))}</p>
+        <div class="word-bank" aria-label="本句可用词语">
+          ${tokens.map((token) => `<span>${escapeHtml(token)}</span>`).join('')}
+        </div>
+      </div>
+    ` : ''}
+    <div class="coach-section coach-tip">
+      <h3>这一遍怎么练</h3>
+      <p>${escapeHtml(speakingPassMeta(speakingSession.pass).tip)}</p>
+    </div>
+  `;
+}
+
+function renderVoiceBar(current) {
+  const feedback = speakingUi.feedback;
+  const learnerControls = `
+    <button class="ghost-button" type="button" data-action="speaking-replay">听示范</button>
+    <button class="ghost-button" type="button" data-action="speaking-slow" aria-pressed="${speakingUi.slow ? 'true' : 'false'}">${speakingUi.slow ? '恢复正常语速' : '慢速播放'}</button>
+    <button class="ghost-button" type="button" data-action="reveal-answer" aria-pressed="${speakingUi.revealed ? 'true' : 'false'}">${speakingUi.revealed ? '已显示完整句子' : '显示完整句子'}</button>
+    ${settings.recognitionEnabled && speechInput.supported
+      ? speakingUi.listening
+        ? '<button class="secondary-button" type="button" data-action="stop-recognition">停止录音</button>'
+        : '<button class="secondary-button" type="button" data-action="start-recognition">使用麦克风</button>'
+      : ''}
+    <button class="primary-button" type="button" data-action="learner-done">我说完了</button>
+  `;
+  const systemControls = `
+    <button class="ghost-button" type="button" data-action="speaking-replay">再听一次</button>
+    <button class="ghost-button" type="button" data-action="speaking-slow" aria-pressed="${speakingUi.slow ? 'true' : 'false'}">${speakingUi.slow ? '恢复正常语速' : '慢速播放'}</button>
+    <button class="primary-button" type="button" data-action="speaking-next">下一句</button>
+  `;
+
+  return `
+    <div class="voice-status">
+      <span class="voice-dot ${speakingUi.listening ? 'is-listening' : ''}" aria-hidden="true"></span>
+      <div>
+        <strong>${speakingUi.listening ? '正在听你说' : current.learnerTurn ? '轮到你说' : '正在播放示范'}</strong>
+        <p>${current.learnerTurn ? '可以用麦克风，也可以自己说完后做自评。' : '听清楚后继续；没有声音也能手动进入下一句。'}</p>
+      </div>
+    </div>
+    ${feedback ? renderSpeakingFeedback(feedback) : ''}
+    <div class="voice-actions">${current.learnerTurn ? learnerControls : systemControls}</div>
+  `;
+}
+
+function renderSpeakingFeedback(feedback) {
+  if (feedback.type === 'self-check') {
+    return `
+      <div class="speaking-feedback self-check">
+        <strong>你觉得刚才这句怎么样？</strong>
+        <div>
+          <button class="secondary-button" type="button" data-action="speaking-self-check" data-result="correct">说得顺</button>
+          <button class="ghost-button" type="button" data-action="speaking-self-check" data-result="incorrect">还要再练</button>
+        </div>
+      </div>
+    `;
+  }
+  return `<p class="speaking-feedback ${feedback.type}">${escapeHtml(feedback.message)}</p>`;
+}
+
+function renderSpeakingComplete() {
+  const lesson = lessons.find((item) => item.id === speakingSession.lessonId) || lessons[0];
+  const states = Object.values(speakingProgress).filter((item) => (
+    item?.lessonId === speakingSession.lessonId && item?.scenarioId === speakingScenario.id
+  ));
+  const nextReview = states.map((item) => item.dueDate).filter(Boolean).sort()[0] || '已完成本轮';
+
+  app.innerHTML = `
+    <section class="speaking-complete">
+      <p class="eyebrow">Part ${lesson.order} · 三遍完成</p>
+      <h1>${escapeHtml(speakingScenario.titleCn)}</h1>
+      <p class="lead">你已经听完对话，并分别扮演了角色 A 和角色 B。重复练习会让句型越来越自然。</p>
+      <div class="completion-summary">
+        <div><strong>3</strong><span>遍练习</span></div>
+        <div><strong>${speakingScenario.turns.length}</strong><span>轮对话</span></div>
+        <div><strong>${escapeHtml(nextReview)}</strong><span>下次复习</span></div>
+      </div>
+      <div class="completion-actions">
+        <button class="primary-button" type="button" data-action="repeat-speaking">再练一遍</button>
+        <button class="secondary-button" type="button" data-action="next-speaking-scenario">下一个场景</button>
+        <button class="ghost-button" type="button" data-action="exit-speaking">返回对话列表</button>
+      </div>
     </section>
   `;
 }
@@ -946,12 +1176,284 @@ function startLessonDaily(lessonId) {
 
 function startSpeaking(lessonId, scenarioId) {
   const nextLessonId = lessons.some((lesson) => lesson.id === lessonId) ? lessonId : currentDailyLessonId();
+  const pack = dialoguePacks.find((item) => item.lessonId === nextLessonId);
+  const scenario = pack?.scenarios.find((item) => item.id === scenarioId) || pack?.scenarios[0];
+  if (!scenario) return;
+
+  navigate('speaking');
   setDailyLesson(nextLessonId);
   activeLessonId = nextLessonId;
-  const pack = dialoguePacks.find((item) => item.lessonId === nextLessonId);
-  selectedSpeakingScenarioId = pack?.scenarios.some((scenario) => scenario.id === scenarioId)
-    ? scenarioId
-    : pack?.scenarios[0]?.id || null;
+  selectedSpeakingScenarioId = scenario.id;
+  speakingScenario = scenario;
+  speakingWhitelist = Object.freeze(buildLessonWhitelist(
+    lessons.find((lesson) => lesson.id === nextLessonId) || lessons[0],
+  ));
+  speakingSession = createSpeakingSession(scenario, {
+    lessonId: nextLessonId,
+    courseVersion: pack.version,
+    whitelistVersion: speakingWhitelist.version,
+  });
+  speakingUi = emptySpeakingUi();
+  render();
+  playSpeakingTurn({ autoAdvance: true });
+}
+
+function emptySpeakingUi() {
+  return {
+    revealed: false,
+    slow: false,
+    feedback: null,
+    listening: false,
+    supportUsed: false,
+  };
+}
+
+function resetSpeakingTurnUi() {
+  speakingUi = emptySpeakingUi();
+}
+
+function speakingPassMeta(pass) {
+  return {
+    listen: {
+      title: '第一遍：听完整对话',
+      instruction: '先听声音，同时看中英文，熟悉语序。',
+      tip: '这一遍不用回答。注意每句开头和结尾的词。',
+      role: null,
+    },
+    'role-a': {
+      title: '第二遍：你扮演角色 A',
+      instruction: '看中文意图，用本课词语说出角色 A 的句子。',
+      tip: '先自己说；卡住时再看句子提示或完整答案。',
+      role: 'A',
+    },
+    'role-b': {
+      title: '第三遍：你扮演角色 B',
+      instruction: '听角色 A，再独立说出角色 B 的回答。',
+      tip: '尽量不看完整句子，把回答连贯地说出来。',
+      role: 'B',
+    },
+  }[pass] || {
+    title: '练习完成',
+    instruction: '',
+    tip: '',
+    role: null,
+  };
+}
+
+function speakingPassSteps(activePass) {
+  const steps = [
+    ['listen', '1', '听对话'],
+    ['role-a', '2', '扮演 A'],
+    ['role-b', '3', '扮演 B'],
+  ];
+  const activeIndex = steps.findIndex(([id]) => id === activePass);
+  return steps.map(([id, number, label], index) => `
+    <div class="pass-step ${id === activePass ? 'is-active' : index < activeIndex ? 'is-complete' : ''}">
+      <span>${number}</span>
+      <strong>${label}</strong>
+    </div>
+  `).join('');
+}
+
+function sentenceFrame(text) {
+  let index = 0;
+  return String(text || '').replace(/[A-Za-z]+(?:'[A-Za-z]+)?|\d+(?::\d+)?/g, (token) => {
+    index += 1;
+    return index % 2 === 1 ? token : '____';
+  });
+}
+
+function playSpeakingTurn({ autoAdvance = false } = {}) {
+  if (!speakingSession || !speakingScenario || speakingSession.pass === 'complete') return false;
+  const current = currentSpeakingTurn(speakingSession, speakingScenario);
+  if (!current || !speakingWhitelist) return false;
+  const validation = validateTextAgainstWhitelist(current.en, speakingWhitelist);
+  if (!validation.valid) {
+    speakingUi.feedback = { type: 'bad', message: '本轮内容未通过课件词汇检查，已停止播放。' };
+    renderSpeakingPractice();
+    return false;
+  }
+
+  const turnIdentity = `${speakingSession.pass}:${speakingSession.turnIndex}`;
+  const spoke = speechOutput.speak(current.en, {
+    lang: 'en-US',
+    rate: speakingUi.slow ? settings.slowRate : settings.normalRate,
+    onend: () => {
+      const identityNow = speakingSession ? `${speakingSession.pass}:${speakingSession.turnIndex}` : '';
+      if (route !== 'speaking' || turnIdentity !== identityNow || !autoAdvance) return;
+      advanceSpeakingFlow();
+    },
+    onerror: () => {
+      if (route !== 'speaking') return;
+      speakingUi.feedback = { type: 'info', message: '当前浏览器没有播放声音，请使用“下一句”继续。' };
+      renderSpeakingPractice();
+    },
+  });
+
+  if (!spoke && autoAdvance) {
+    speakingUi.feedback = { type: 'info', message: '当前浏览器没有播放声音，请手动继续。' };
+    renderSpeakingPractice();
+  }
+  return spoke;
+}
+
+function toggleSlowSpeech() {
+  if (!speakingSession) return;
+  speakingUi.slow = !speakingUi.slow;
+  speakingUi.feedback = null;
+  renderSpeakingPractice();
+  playSpeakingTurn();
+}
+
+function revealSpeakingAnswer() {
+  if (!speakingSession || !speakingScenario) return;
+  const current = currentSpeakingTurn(speakingSession, speakingScenario);
+  if (!current?.learnerTurn) return;
+  speakingUi.revealed = true;
+  speakingUi.supportUsed = true;
+  speakingUi.feedback = null;
+  renderSpeakingPractice();
+}
+
+function requestSpeakingSelfCheck() {
+  if (!speakingSession || !speakingScenario) return;
+  const current = currentSpeakingTurn(speakingSession, speakingScenario);
+  if (!current?.learnerTurn) return;
+  speechInput.abort();
+  speakingUi.listening = false;
+  speakingUi.feedback = { type: 'self-check' };
+  renderSpeakingPractice();
+}
+
+function finishSpeakingSelfCheck(result) {
+  if (result !== 'correct' && result !== 'incorrect') return;
+  recordCurrentSpeakingAttempt(result);
+  advanceSpeakingFlow();
+}
+
+function startSpeakingRecognition() {
+  if (!speakingSession || !speakingScenario) return;
+  const current = currentSpeakingTurn(speakingSession, speakingScenario);
+  if (!current?.learnerTurn) return;
+  if (!settings.recognitionEnabled || !speechInput.supported) {
+    speakingUi.feedback = { type: 'info', message: '语音识别未开启，请使用“我说完了”继续。' };
+    renderSpeakingPractice();
+    return;
+  }
+
+  speechOutput.cancel();
+  speakingUi.listening = true;
+  speakingUi.feedback = null;
+  renderSpeakingPractice();
+  const turnIdentity = `${speakingSession.pass}:${speakingSession.turnIndex}`;
+  const started = speechInput.start({
+    lang: 'en-US',
+    onResult: (transcript) => handleSpeakingTranscript(transcript, turnIdentity),
+    onError: () => handleSpeakingRecognitionError(turnIdentity),
+    onEnd: () => handleSpeakingRecognitionEnd(turnIdentity),
+  });
+  if (!started) handleSpeakingRecognitionError(turnIdentity);
+}
+
+function stopSpeakingRecognition() {
+  speechInput.stop();
+  speakingUi.listening = false;
+  speakingUi.feedback = { type: 'info', message: '录音已停止，你也可以直接做自评。' };
+  renderSpeakingPractice();
+}
+
+function handleSpeakingTranscript(transcript, turnIdentity) {
+  const identityNow = speakingSession ? `${speakingSession.pass}:${speakingSession.turnIndex}` : '';
+  if (route !== 'speaking' || turnIdentity !== identityNow) return;
+  const current = currentSpeakingTurn(speakingSession, speakingScenario);
+  const validation = validateTextAgainstWhitelist(transcript, speakingWhitelist);
+  const variants = speakingScenario.variants
+    .filter((item) => current.variantIds.includes(item.id))
+    .map((item) => item.en);
+  const matched = validation.valid && [current.en, ...variants].some((line) => isAnswerMatch(line, transcript));
+
+  speakingUi.listening = false;
+  if (!validation.valid || !matched) {
+    recordCurrentSpeakingAttempt('incorrect');
+    speakingUi.feedback = { type: 'bad', message: '本轮请使用本课句型' };
+    renderSpeakingPractice();
+    return;
+  }
+
+  recordCurrentSpeakingAttempt('correct');
+  advanceSpeakingFlow();
+}
+
+function handleSpeakingRecognitionError(turnIdentity) {
+  const identityNow = speakingSession ? `${speakingSession.pass}:${speakingSession.turnIndex}` : '';
+  if (route !== 'speaking' || turnIdentity !== identityNow) return;
+  speakingUi.listening = false;
+  speakingUi.feedback = { type: 'info', message: '语音识别暂不可用，请使用“我说完了”继续。' };
+  renderSpeakingPractice();
+}
+
+function handleSpeakingRecognitionEnd(turnIdentity) {
+  const identityNow = speakingSession ? `${speakingSession.pass}:${speakingSession.turnIndex}` : '';
+  if (route !== 'speaking' || turnIdentity !== identityNow || !speakingUi.listening) return;
+  speakingUi.listening = false;
+  speakingUi.feedback = { type: 'info', message: '没有听到完整句子，请重试或使用自评。' };
+  renderSpeakingPractice();
+}
+
+function recordCurrentSpeakingAttempt(result) {
+  if (!speakingSession || !speakingScenario) return;
+  const current = currentSpeakingTurn(speakingSession, speakingScenario);
+  if (!current) return;
+  const skill = speakingSession.pass === 'listen'
+    ? 'listen'
+    : speakingSession.pass === 'role-a' ? 'guided-produce' : 'independent-produce';
+  speakingProgress = recordSpeakingAttempt(speakingProgress, {
+    lessonId: speakingSession.lessonId,
+    scenarioId: speakingScenario.id,
+    turnId: current.id,
+    patternId: current.patternId,
+    skill,
+    result,
+    supportUsed: speakingUi.supportUsed,
+    date: todayKey(),
+  });
+  saveJson(SPEAKING_PROGRESS_KEY, speakingProgress);
+}
+
+function advanceSpeakingFlow() {
+  if (!speakingSession || !speakingScenario || speakingSession.pass === 'complete') return;
+  const current = currentSpeakingTurn(speakingSession, speakingScenario);
+  speechOutput.cancel();
+  speechInput.abort();
+  if (speakingSession.pass === 'listen' && current) recordCurrentSpeakingAttempt('correct');
+  speakingSession = advanceSpeakingSession(speakingSession, speakingScenario);
+  resetSpeakingTurnUi();
+  renderSpeakingPractice();
+
+  const next = currentSpeakingTurn(speakingSession, speakingScenario);
+  if (next?.systemTurn) playSpeakingTurn({ autoAdvance: true });
+}
+
+function restartSpeakingScenario() {
+  if (!speakingSession || !speakingScenario) return;
+  startSpeaking(speakingSession.lessonId, speakingScenario.id);
+}
+
+function startNextSpeakingScenario() {
+  if (!speakingSession || !speakingScenario) return;
+  const pack = dialoguePacks.find((item) => item.lessonId === speakingSession.lessonId);
+  const index = pack?.scenarios.findIndex((item) => item.id === speakingScenario.id) ?? -1;
+  const next = pack?.scenarios[(index + 1) % pack.scenarios.length];
+  if (next) startSpeaking(speakingSession.lessonId, next.id);
+}
+
+function exitSpeakingSession() {
+  speechOutput.cancel();
+  speechInput.abort();
+  speakingSession = null;
+  speakingScenario = null;
+  speakingWhitelist = null;
+  speakingUi = emptySpeakingUi();
   navigate('speaking');
   render();
 }
