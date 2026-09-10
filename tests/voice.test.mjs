@@ -58,11 +58,29 @@ test('speech output ignores callbacks from cancelled or superseded utterances', 
   assert.deepEqual(output.status(), { supported: true, state: 'idle' });
 });
 
+test('speech output treats null options and utterance construction failures as safe fallback', () => {
+  class ThrowingUtterance { constructor() { throw new Error('constructor failed'); } }
+  const output = createSpeechOutput({
+    speechSynthesis: { cancel() {}, speak() {} },
+    SpeechSynthesisUtterance: ThrowingUtterance,
+  });
+  assert.equal(output.speak('hello', null), false);
+  assert.deepEqual(output.status(), { supported: true, state: 'idle' });
+});
+
 test('speech input reports a manual fallback when recognition is unavailable', () => {
   const input = createSpeechInput({});
   assert.deepEqual(input.status(), { supported: false, state: 'manual' });
   assert.equal(input.start(), false);
   assert.equal(input.stop(), false);
+});
+
+test('speech input uses the first callable recognition constructor', () => {
+  FakeRecognition.instances = [];
+  const input = createSpeechInput({ SpeechRecognition: {}, webkitSpeechRecognition: FakeRecognition });
+  assert.equal(input.supported, true);
+  assert.equal(input.start(), true);
+  assert.equal(FakeRecognition.instances.length, 1);
 });
 
 class FakeRecognition {
@@ -103,6 +121,24 @@ test('speech input starts only on demand and emits one final transcript', () => 
   recognition.onresult?.({ results: [Object.assign([{ transcript: 'I am' }], { isFinal: false })] });
   recognition.onresult?.(finalResult('I am busy.'));
   recognition.onresult?.(finalResult('stale second result'));
+  assert.deepEqual(transcripts, ['I am busy.']);
+});
+
+test('speech input treats null start options as the default configuration', () => {
+  FakeRecognition.instances = [];
+  const input = createSpeechInput({ SpeechRecognition: FakeRecognition });
+  assert.equal(input.start(null), true);
+  assert.equal(FakeRecognition.instances[0].lang, 'en-US');
+});
+
+test('speech input ignores empty final results until a non-empty final transcript arrives', () => {
+  FakeRecognition.instances = [];
+  const transcripts = [];
+  const input = createSpeechInput({ SpeechRecognition: FakeRecognition });
+  input.start({ onResult: (text) => transcripts.push(text) });
+  const recognition = FakeRecognition.instances[0];
+  recognition.onresult?.(finalResult('   '));
+  recognition.onresult?.(finalResult('I am busy.'));
   assert.deepEqual(transcripts, ['I am busy.']);
 });
 
@@ -170,11 +206,24 @@ test('speech input handles end and error in either order once per start', () => 
   recognition.onend?.();
   recognition.onerror?.({ error: 'network' });
   recognition.onend?.();
-  assert.deepEqual(events, ['end']);
+  assert.deepEqual(events, ['end', 'error:network-error']);
 
   input.start({ onError: (error) => events.push(`error:${error.code}`), onEnd: () => events.push('end-2') });
   const second = FakeRecognition.instances[1];
   second.onerror?.({ error: 'no-speech' });
   second.onend?.();
-  assert.deepEqual(events, ['end', 'error:no-speech', 'end-2']);
+  assert.deepEqual(events, ['end', 'error:network-error', 'error:no-speech', 'end-2']);
+});
+
+test('late errors from an ended recognizer do not leak after a new start', () => {
+  FakeRecognition.instances = [];
+  const errors = [];
+  const input = createSpeechInput({ SpeechRecognition: FakeRecognition });
+  input.start({ onError: (error) => errors.push(`first:${error.code}`) });
+  const first = FakeRecognition.instances[0];
+  first.onend?.();
+
+  input.start({ onError: (error) => errors.push(`second:${error.code}`) });
+  first.onerror?.({ error: 'not-allowed' });
+  assert.deepEqual(errors, []);
 });

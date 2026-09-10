@@ -47,17 +47,30 @@ export function createSpeechOutput(environment = {}) {
   function speak(text, options = {}) {
     if (!supported || typeof text !== 'string' || !text.trim()) return false;
 
+    const speechOptions = options && typeof options === 'object' ? options : {};
+
     // A new line supersedes every prior callback, including callbacks queued
     // by an implementation that does not synchronously honour cancel().
     generation += 1;
     const requestGeneration = generation;
-    synthesis.cancel();
+    try {
+      synthesis.cancel();
+    } catch {
+      state = 'idle';
+      return false;
+    }
 
-    const utterance = new Utterance(text);
-    utterance.rate = Number.isFinite(options.rate) ? options.rate : 1;
-    utterance.lang = options.lang || 'en-US';
-    const onend = asCallback(options.onend);
-    const onerror = asCallback(options.onerror);
+    let utterance;
+    try {
+      utterance = new Utterance(text);
+      utterance.rate = Number.isFinite(speechOptions.rate) ? speechOptions.rate : 1;
+      utterance.lang = speechOptions.lang || 'en-US';
+    } catch {
+      state = 'idle';
+      return false;
+    }
+    const onend = asCallback(speechOptions.onend);
+    const onerror = asCallback(speechOptions.onerror);
 
     state = 'speaking';
     utterance.onend = (event) => {
@@ -70,7 +83,12 @@ export function createSpeechOutput(environment = {}) {
       state = 'idle';
       onerror(event);
     };
-    synthesis.speak(utterance);
+    try {
+      synthesis.speak(utterance);
+    } catch {
+      state = 'idle';
+      return false;
+    }
     return true;
   }
 
@@ -120,8 +138,11 @@ function finalTranscript(event) {
  * affect the active turn.
  */
 export function createSpeechInput(environment = {}) {
-  const Recognition = globalValue(environment, 'SpeechRecognition') ||
-    globalValue(environment, 'webkitSpeechRecognition');
+  const standardRecognition = globalValue(environment, 'SpeechRecognition');
+  const webkitRecognition = globalValue(environment, 'webkitSpeechRecognition');
+  const Recognition = typeof standardRecognition === 'function'
+    ? standardRecognition
+    : typeof webkitRecognition === 'function' ? webkitRecognition : undefined;
   const supported = typeof Recognition === 'function';
 
   if (!supported) {
@@ -136,6 +157,7 @@ export function createSpeechInput(environment = {}) {
   }
 
   let active = null;
+  let terminal = null;
   let state = 'idle';
   let lastCode;
 
@@ -150,6 +172,7 @@ export function createSpeechInput(environment = {}) {
     // Invalidate before calling the browser API: stop/abort can synchronously
     // dispatch result, error, or end in some implementations.
     active = null;
+    terminal = null;
     state = 'idle';
     const nativeMethod = typeof record.recognition?.[method] === 'function'
       ? method
@@ -175,6 +198,9 @@ export function createSpeechInput(environment = {}) {
   function start(options = {}) {
     // Starting a new turn is also an explicit cancellation of the old turn.
     if (active) abort();
+    terminal = null;
+
+    const startOptions = options && typeof options === 'object' ? options : {};
 
     let recognition;
     try {
@@ -194,29 +220,30 @@ export function createSpeechInput(environment = {}) {
     state = 'listening';
     lastCode = undefined;
 
-    recognition.lang = options.lang || 'en-US';
+    recognition.lang = startOptions.lang || 'en-US';
     recognition.interimResults = true;
     recognition.continuous = false;
     recognition.onresult = (event) => {
       if (active !== record || record.finalEmitted) return;
       const transcript = finalTranscript(event);
-      if (transcript === null) return;
+      if (transcript === null || !transcript) return;
       record.finalEmitted = true;
-      if (transcript && typeof options.onResult === 'function') options.onResult(transcript);
+      if (typeof startOptions.onResult === 'function') startOptions.onResult(transcript);
     };
     recognition.onerror = (event) => {
-      if (active !== record || record.errorEmitted) return;
+      if (active !== record && terminal !== record || record.errorEmitted) return;
       record.errorEmitted = true;
       const mapped = recognitionError(event);
       lastCode = mapped.code;
       state = 'manual';
-      if (typeof options.onError === 'function') options.onError(mapped);
+      if (typeof startOptions.onError === 'function') startOptions.onError(mapped);
     };
     recognition.onend = (event) => {
       if (active !== record) return;
       active = null;
+      terminal = record;
       if (!lastCode) state = 'idle';
-      if (typeof options.onEnd === 'function') options.onEnd(event);
+      if (typeof startOptions.onEnd === 'function') startOptions.onEnd(event);
     };
 
     try {
@@ -229,7 +256,7 @@ export function createSpeechInput(environment = {}) {
         const mapped = recognitionError(error);
         lastCode = mapped.code;
         state = 'manual';
-        if (typeof options.onError === 'function') options.onError(mapped);
+        if (typeof startOptions.onError === 'function') startOptions.onError(mapped);
       }
       return false;
     }
