@@ -1,4 +1,13 @@
 import { lessons } from '../../data/lessons.js';
+import { dialoguePacks } from '../../data/dialogues.js';
+import { tokenizeCourseEnglish } from './dialogue-engine.js';
+import {
+  LOCAL_AI_PRESETS,
+  normalizeLocalAiSettings,
+  testLocalAiConnection,
+  validateLoopbackBaseUrl,
+} from './local-ai.js';
+import { createSpeechInput, createSpeechOutput } from './voice.js';
 import {
   buildDailyPlan,
   buildGeneratedSentenceItems,
@@ -13,25 +22,36 @@ import {
 } from './study-engine.js';
 
 const STORAGE_KEY = 'english_learning_v2_progress';
-const SETTINGS_KEY = 'english_learning_v2_settings';
+const SETTINGS_KEY = 'english_learning_v3_settings';
+const LEGACY_SETTINGS_KEY = 'english_learning_v2_settings';
 const DRILL_PROGRESS_KEY = 'english_learning_v2_drill_progress';
+const SPEAKING_PROGRESS_KEY = 'english_learning_v3_speaking_progress';
 const STAGES = ['listen', 'choice', 'dictation', 'fillblank'];
+const PROVIDERS = new Set(['off', 'ollama', 'lmstudio', 'custom']);
+const NORMAL_RATES = new Set([0.8, 0.9, 1]);
+const SLOW_RATES = new Set([0.55, 0.65, 0.75]);
 
 const app = document.querySelector('#app');
 const navButtons = Array.from(document.querySelectorAll('.nav-button'));
 const vocabulary = buildVocabularyIndex(lessons);
 const wordPracticeItems = buildWordPracticeItems(lessons);
 const sentencePracticeItems = buildGeneratedSentenceItems(lessons);
+const speechOutput = createSpeechOutput(globalThis);
+const speechInput = createSpeechInput(globalThis);
 
 let route = 'home';
-let activeLessonId = null;
+let activeLessonId = 'part-1';
+let selectedSpeakingScenarioId = null;
 let activeFeedback = null;
 let session = null;
 let drillSession = null;
 let progress = loadJson(STORAGE_KEY, {});
-let settings = loadJson(SETTINGS_KEY, { dailyLimit: 15, dailyLessonId: 'all' });
+let settings = loadSettings();
+let speakingProgress = loadJson(SPEAKING_PROGRESS_KEY, {});
 let drillProgress = normalizeDrillProgress(loadJson(DRILL_PROGRESS_KEY, emptyDrillProgress()));
 let vocabularyFilters = { query: '', lessonId: 'all' };
+let routeAbortController = new AbortController();
+let aiConnection = { state: settings.localAi.enabled ? 'untested' : 'off', message: settings.localAi.enabled ? '未测试' : '关闭' };
 let playback = {
   lessonIds: ['all'],
   index: 0,
@@ -46,6 +66,8 @@ const PLAYBACK_PHASES = [
   { field: 'en', lang: 'en-US', rate: 0.82 },
 ];
 const PLAYBACK_GAP_MS = 1000;
+
+activeLessonId = currentDailyLessonId();
 
 render();
 
@@ -65,10 +87,12 @@ app.addEventListener('click', (event) => {
   if (!action) return;
 
   const { action: name } = action.dataset;
+  if (name === 'start-speaking') startSpeaking(action.dataset.lessonId, action.dataset.scenarioId);
   if (name === 'start-daily') startDaily(Number(action.dataset.limit));
   if (name === 'start-custom') startDaily(Number(document.querySelector('#custom-limit')?.value || 15));
   if (name === 'set-daily-lesson') {
     setDailyLesson(action.dataset.lessonId);
+    activeLessonId = currentDailyLessonId();
     render();
   }
   if (name === 'start-lesson-daily') startLessonDaily(action.dataset.lessonId);
@@ -92,6 +116,15 @@ app.addEventListener('click', (event) => {
     activeFeedback = null;
     render();
   }
+  if (name === 'open-vocabulary') {
+    vocabularyFilters.lessonId = action.dataset.lessonId || 'all';
+    navigate('vocabulary');
+    render();
+  }
+  if (name === 'open-practice') {
+    navigate('practice');
+    render();
+  }
   if (name === 'start-wrong-practice') startWrongPractice();
   if (name === 'speak') speak(action.dataset.text);
   if (name === 'lesson') {
@@ -108,6 +141,7 @@ app.addEventListener('click', (event) => {
   if (name === 'next-drill') nextDrillItem();
   if (name === 'restart-drill') restartDrillPractice();
   if (name === 'reset-progress') resetProgress();
+  if (name === 'test-local-ai') testLocalAiFromForm(action.closest('form'));
   if (name === 'play-vocabulary-audio') startVocabularyPlayback();
   if (name === 'pause-vocabulary-audio') pauseVocabularyPlayback();
   if (name === 'previous-vocabulary-word') moveVocabularyPlayback(-1);
@@ -151,6 +185,9 @@ app.addEventListener('submit', (event) => {
   if (form.dataset.form === 'drill-practice') {
     checkDrillAnswer(form);
   }
+  if (form.dataset.form === 'settings') {
+    saveSettingsFromForm(form);
+  }
 });
 
 app.addEventListener('input', (event) => {
@@ -174,6 +211,9 @@ app.addEventListener('change', (event) => {
     vocabularyFilters.lessonId = event.target.value;
     renderVocabulary();
   }
+  if (event.target.name === 'ai-provider') {
+    updateProviderFields(event.target.value);
+  }
 });
 
 function render() {
@@ -184,54 +224,194 @@ function render() {
   if (route === 'practice') renderPractice();
   if (route === 'wrongbook') renderWrongBook();
   if (route === 'study') renderStudy();
+  if (route === 'speaking') renderSpeaking();
+  if (route === 'review') renderReview();
+  if (route === 'settings') renderSettings();
 }
 
 function renderHome() {
   const lessonId = currentDailyLessonId();
-  const stats = getStats(lessonId);
-  const plan = buildDailyPlan({ vocabulary, progress, today: todayKey(), limit: settings.dailyLimit, lessonId: currentDailyLessonId() });
-  const scopeName = scopeTitle(lessonId);
+  const lesson = lessons.find((item) => item.id === lessonId) || lessons[0];
+  const pack = dialoguePacks.find((item) => item.lessonId === lesson.id);
+  const scenario = pack?.scenarios[0];
+  const targetWords = scenario
+    ? Array.from(new Set(scenario.turns.flatMap((turn) => tokenizeCourseEnglish(turn.en)))).slice(0, 8)
+    : [];
 
   app.innerHTML = `
-    <section class="hero-band">
-      <p class="eyebrow">English Learning</p>
-      <h1>今日学习</h1>
-      <p class="lead">按当前范围推进新词，同时自动插入本范围内的错词和到期复习词。</p>
+    <section class="hero-band today-hero">
+      <div class="today-kicker">
+        <div>
+          <p class="eyebrow">English Learning</p>
+          <h1>今日口语</h1>
+        </div>
+        <span class="course-only-badge">只使用本课词汇</span>
+      </div>
       ${lessonScopeControl(lessonId)}
-      <p class="scope-note">当前：${escapeHtml(scopeName)} · 复习、错词、新词都${lessonId === 'all' ? '来自全部课本' : '只来自本课'}。</p>
-      <div class="stats-grid">
-        ${statBlock(plan.totalAvailable, '去重词汇')}
-        ${statBlock(stats.mastered, '已掌握')}
-        ${statBlock(plan.items.length, '今日可学')}
+      <div class="today-lesson-copy">
+        <p class="eyebrow">Part ${lesson.order} · 推荐场景</p>
+        <h2>${escapeHtml(scenario?.titleCn || lesson.focus)}</h2>
+        <p class="lead">${escapeHtml(scenario?.goalCn || lesson.focus)}</p>
       </div>
+      <div class="target-words" aria-label="本次目标词语">
+        ${targetWords.map((word) => `<span class="target-word">${escapeHtml(word)}</span>`).join('')}
+      </div>
+      <div class="today-meta">
+        <span>约 6–8 分钟</span>
+        <span>先听 · 扮演 A · 扮演 B</span>
+      </div>
+      <button class="primary-button today-start" type="button" data-action="start-speaking" data-lesson-id="${lesson.id}" data-scenario-id="${escapeAttr(scenario?.id || '')}">开始 Part ${lesson.order} 口语</button>
     </section>
 
-    <section class="section-band">
-      <h2>开始今天</h2>
-      <div class="button-row three">
-        <button class="primary-button" type="button" data-action="start-daily" data-limit="15">15 个</button>
-        <button class="secondary-button" type="button" data-action="start-daily" data-limit="25">25 个</button>
-        <button class="ghost-button" type="button" data-action="start-custom">自定义</button>
+    <section class="section-band today-next">
+      <div>
+        <p class="eyebrow">零基础练法</p>
+        <h2>一句一句跟着说</h2>
+        <p class="meta">听不懂可以看中文；不会说可以显示提示。每次只练当前 Part，不会突然出现课外单词。</p>
       </div>
-      <div class="toolbar" style="margin-top:12px">
-        <input id="custom-limit" class="search-input" type="number" min="5" max="80" value="${escapeHtml(settings.dailyLimit)}" aria-label="自定义数量">
+      <div class="today-actions">
+        <button class="secondary-button" type="button" data-action="open-vocabulary" data-lesson-id="${lesson.id}">先看本课词语</button>
+        <button class="ghost-button" type="button" data-action="lesson" data-lesson-id="${lesson.id}">查看课程内容</button>
       </div>
-      <p class="meta">今日建议：复习 ${plan.counts.review}，错词 ${plan.counts.wrong}，新词 ${plan.counts.new}。</p>
     </section>
+  `;
+}
 
-    <section class="section-band">
-      <h2>学习进度</h2>
-      <div class="list">
-        <div class="practice-item">
-          <strong>课本主线</strong>
-          <p class="meta">${escapeHtml(nextNewLabel(lessonId))}</p>
+function renderSpeaking() {
+  const lessonId = currentDailyLessonId();
+  const lesson = lessons.find((item) => item.id === lessonId) || lessons[0];
+  const pack = dialoguePacks.find((item) => item.lessonId === lesson.id);
+
+  app.innerHTML = `
+    ${header('交互式对话', `Part ${lesson.order} · 选择一个场景，完成三遍口语练习。`)}
+    <section class="section-band speaking-launcher">
+      <div class="today-kicker">
+        <div>
+          <p class="eyebrow">Speaking practice</p>
+          <h2>今天练 Part ${lesson.order}</h2>
         </div>
-        <div class="practice-item">
-          <strong>延迟复习</strong>
-          <p class="meta">当天学会后，明天、3 天后、7 天后继续复习；都答对才算掌握。</p>
-        </div>
+        <span class="course-only-badge">只使用本课词汇</span>
       </div>
+      ${lessonScopeControl(lesson.id)}
     </section>
+    <section class="scenario-list" aria-label="对话场景">
+      ${(pack?.scenarios || []).map((scenario, index) => `
+        <article class="scenario-card ${scenario.id === selectedSpeakingScenarioId ? 'is-selected' : ''}">
+          <div class="scenario-number" aria-hidden="true">${index + 1}</div>
+          <div class="scenario-copy">
+            <p class="eyebrow">4 轮对话 · 三遍练习</p>
+            <h2>${escapeHtml(scenario.titleCn)}</h2>
+            <p class="meta">${escapeHtml(scenario.goalCn)}</p>
+          </div>
+          <button class="primary-button" type="button" data-action="start-speaking" data-lesson-id="${lesson.id}" data-scenario-id="${scenario.id}">开始练习</button>
+        </article>
+      `).join('') || empty('本课对话正在整理中')}
+    </section>
+  `;
+}
+
+function renderReview() {
+  const lesson = lessons.find((item) => item.id === currentDailyLessonId()) || lessons[0];
+  const wrongCount = wrongVocabulary(lesson.id).length;
+
+  app.innerHTML = `
+    ${header('复习', `围绕 Part ${lesson.order} 巩固词语、句子和错题。`)}
+    <section class="review-grid">
+      <article class="review-card">
+        <p class="eyebrow">Vocabulary</p>
+        <h2>本课词语</h2>
+        <p class="meta">先听英文，再看中文，熟悉对话里会出现的词语。</p>
+        <button class="secondary-button" type="button" data-action="open-vocabulary" data-lesson-id="${lesson.id}">打开词语</button>
+      </article>
+      <article class="review-card">
+        <p class="eyebrow">Practice</p>
+        <h2>读写练习</h2>
+        <p class="meta">把原有的单词、句子、语法和问答练习集中在这里。</p>
+        <button class="secondary-button" type="button" data-action="open-practice">打开练习</button>
+      </article>
+      <article class="review-card">
+        <p class="eyebrow">Mistakes</p>
+        <h2>错题本</h2>
+        <p class="meta">Part ${lesson.order} 当前有 ${wrongCount} 个需要重新练习的词语。</p>
+        <button class="ghost-button" type="button" data-action="open-wrongbook">查看错题</button>
+      </article>
+    </section>
+  `;
+}
+
+function renderSettings() {
+  const local = settings.localAi;
+  const providerOptions = [
+    ['off', '关闭', '始终使用网页内置对话'],
+    ['ollama', 'Ollama', '默认连接 127.0.0.1:11434'],
+    ['lmstudio', 'LM Studio', '默认连接 127.0.0.1:1234'],
+    ['custom', '自定义本机接口', '仅允许 localhost 或回环地址'],
+  ];
+  const statusClass = ['off', 'untested', 'testing', 'ok', 'bad'].includes(aiConnection.state) ? aiConnection.state : 'untested';
+
+  app.innerHTML = `
+    ${header('设置', '网页离线也能练习；本机 AI 和语音识别都由你主动开启。')}
+    <form class="settings-form" data-form="settings">
+      <section class="section-band settings-group">
+        <div>
+          <p class="eyebrow">Local AI</p>
+          <h2>本机 AI 对话</h2>
+          <p class="meta">AI 只从课件已审核的表达中选择下一句；未连接时自动使用内置对话。</p>
+        </div>
+        <div class="provider-grid" role="radiogroup" aria-label="本机 AI 提供方">
+          ${providerOptions.map(([value, label, description]) => `
+            <label class="provider-choice ${local.provider === value ? 'is-selected' : ''}">
+              <input type="radio" name="ai-provider" value="${value}" ${local.provider === value ? 'checked' : ''}>
+              <span><strong>${label}</strong><small>${description}</small></span>
+            </label>
+          `).join('')}
+        </div>
+        <div class="settings-grid" data-ai-fields ${local.provider === 'off' ? 'hidden' : ''}>
+          <label class="field-label">
+            <span>本机服务地址</span>
+            <input class="form-input" type="url" name="ai-base-url" value="${escapeAttr(local.baseUrl)}" placeholder="http://127.0.0.1:11434/v1" autocomplete="off">
+          </label>
+          <label class="field-label">
+            <span>模型名称</span>
+            <input class="form-input" type="text" name="ai-model" value="${escapeAttr(local.model)}" placeholder="例如：qwen2.5:7b" autocomplete="off">
+          </label>
+        </div>
+        <div class="setting-actions">
+          <button class="ghost-button" type="button" data-action="test-local-ai" ${local.provider === 'off' ? 'disabled' : ''}>测试本机连接</button>
+          <p class="ai-status ${statusClass}" role="status" aria-live="polite">${escapeHtml(aiConnection.message)}</p>
+        </div>
+        <p class="settings-help">GitHub Pages 使用 HTTPS。浏览器可能要求你允许“本地网络访问”，本机服务也需要允许跨域访问；连接只发往你填写的回环地址。</p>
+      </section>
+
+      <section class="section-band settings-group">
+        <div>
+          <p class="eyebrow">Voice</p>
+          <h2>语音速度与识别</h2>
+        </div>
+        <div class="settings-grid">
+          <label class="field-label">
+            <span>正常语速</span>
+            <select class="form-input" name="normal-rate">
+              ${[0.8, 0.9, 1].map((rate) => `<option value="${rate}" ${settings.normalRate === rate ? 'selected' : ''}>${rate}×</option>`).join('')}
+            </select>
+          </label>
+          <label class="field-label">
+            <span>慢速跟读</span>
+            <select class="form-input" name="slow-rate">
+              ${[0.55, 0.65, 0.75].map((rate) => `<option value="${rate}" ${settings.slowRate === rate ? 'selected' : ''}>${rate}×</option>`).join('')}
+            </select>
+          </label>
+        </div>
+        <label class="recognition-choice">
+          <input type="checkbox" name="recognition-enabled" ${settings.recognitionEnabled ? 'checked' : ''}>
+          <span><strong>浏览器语音识别</strong><small>开启后，可用麦克风把你的英语转成文字；不支持时仍可手动输入。</small></span>
+        </label>
+      </section>
+
+      <div class="settings-savebar">
+        <button class="primary-button" type="submit">保存设置</button>
+      </div>
+    </form>
   `;
 }
 
@@ -764,6 +944,18 @@ function startLessonDaily(lessonId) {
   startDaily(settings.dailyLimit, lessonId);
 }
 
+function startSpeaking(lessonId, scenarioId) {
+  const nextLessonId = lessons.some((lesson) => lesson.id === lessonId) ? lessonId : currentDailyLessonId();
+  setDailyLesson(nextLessonId);
+  activeLessonId = nextLessonId;
+  const pack = dialoguePacks.find((item) => item.lessonId === nextLessonId);
+  selectedSpeakingScenarioId = pack?.scenarios.some((scenario) => scenario.id === scenarioId)
+    ? scenarioId
+    : pack?.scenarios[0]?.id || null;
+  navigate('speaking');
+  render();
+}
+
 function startWrongPractice() {
   const items = wrongVocabulary().slice(0, 25);
   if (!items.length) {
@@ -1091,7 +1283,7 @@ function sourceTitle(id) {
 }
 
 function currentDailyLessonId() {
-  return lessons.some((lesson) => lesson.id === settings.dailyLessonId) ? settings.dailyLessonId : 'all';
+  return lessons.some((lesson) => lesson.id === settings.dailyLessonId) ? settings.dailyLessonId : 'part-1';
 }
 
 function scopedVocabulary(lessonId = currentDailyLessonId()) {
@@ -1108,15 +1300,12 @@ function scopeTitle(lessonId = currentDailyLessonId()) {
 }
 
 function setDailyLesson(lessonId) {
-  settings.dailyLessonId = lessons.some((lesson) => lesson.id === lessonId) ? lessonId : 'all';
+  settings.dailyLessonId = lessons.some((lesson) => lesson.id === lessonId) ? lessonId : 'part-1';
   saveJson(SETTINGS_KEY, settings);
 }
 
 function lessonScopeControl(activeLessonId) {
-  const options = [
-    { id: 'all', label: '全部课本' },
-    ...lessons.map((lesson) => ({ id: lesson.id, label: sourceTitle(lesson.id) })),
-  ];
+  const options = lessons.map((lesson) => ({ id: lesson.id, label: sourceTitle(lesson.id) }));
 
   return `
     <div class="scope-strip" role="group" aria-label="今日学习范围">
@@ -1387,13 +1576,19 @@ function setActiveNav() {
   navButtons.forEach((button) => {
     const active = button.dataset.route === route ||
       (route === 'lesson-detail' && button.dataset.route === 'lessons') ||
-      (route === 'study' && button.dataset.route === 'home');
+      (route === 'study' && button.dataset.route === 'home') ||
+      (['vocabulary', 'practice', 'wrongbook'].includes(route) && button.dataset.route === 'review') ||
+      (route === 'wrongbook' && button.dataset.route === 'review');
     button.classList.toggle('active', active);
   });
 }
 
 function navigate(nextRoute) {
   if (nextRoute !== 'vocabulary') stopVocabularyPlayback({ rerender: false });
+  speechOutput.cancel();
+  speechInput.abort();
+  routeAbortController.abort();
+  routeAbortController = new AbortController();
   route = nextRoute;
 }
 
@@ -1454,6 +1649,165 @@ function resetProgress() {
   saveJson(STORAGE_KEY, progress);
   saveJson(DRILL_PROGRESS_KEY, drillProgress);
   renderPractice();
+}
+
+function defaultSettings() {
+  return {
+    dailyLimit: 15,
+    dailyLessonId: 'part-1',
+    normalRate: 0.9,
+    slowRate: 0.65,
+    recognitionEnabled: false,
+    localAi: {
+      enabled: false,
+      provider: 'off',
+      baseUrl: '',
+      model: '',
+    },
+  };
+}
+
+function normalizeSettings(value) {
+  const defaults = defaultSettings();
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const sourceLocal = source.localAi && typeof source.localAi === 'object' && !Array.isArray(source.localAi)
+    ? source.localAi
+    : {};
+  const provider = PROVIDERS.has(sourceLocal.provider) ? sourceLocal.provider : 'off';
+  const rate = Number(source.normalRate);
+  const slowRate = Number(source.slowRate);
+  let localAi = defaults.localAi;
+
+  if (provider !== 'off') {
+    const normalized = normalizeLocalAiSettings({
+      ...sourceLocal,
+      enabled: sourceLocal.enabled === true,
+      provider,
+      baseUrl: sourceLocal.baseUrl || LOCAL_AI_PRESETS[provider]?.baseUrl || '',
+    });
+    localAi = { ...normalized, provider };
+  }
+
+  return {
+    dailyLimit: Number.isFinite(Number(source.dailyLimit)) ? Math.min(80, Math.max(5, Number(source.dailyLimit))) : defaults.dailyLimit,
+    dailyLessonId: lessons.some((lesson) => lesson.id === source.dailyLessonId) ? source.dailyLessonId : defaults.dailyLessonId,
+    normalRate: NORMAL_RATES.has(rate) ? rate : defaults.normalRate,
+    slowRate: SLOW_RATES.has(slowRate) ? slowRate : defaults.slowRate,
+    recognitionEnabled: source.recognitionEnabled === true,
+    localAi,
+  };
+}
+
+function loadSettings() {
+  const saved = loadJson(SETTINGS_KEY, null);
+  if (saved) return normalizeSettings(saved);
+  const legacy = loadJson(LEGACY_SETTINGS_KEY, null);
+  return normalizeSettings(legacy || defaultSettings());
+}
+
+function settingsFromForm(form) {
+  const data = new FormData(form);
+  const provider = PROVIDERS.has(String(data.get('ai-provider'))) ? String(data.get('ai-provider')) : 'off';
+  const baseUrl = provider === 'off'
+    ? ''
+    : String(data.get('ai-base-url') || LOCAL_AI_PRESETS[provider]?.baseUrl || '').trim();
+
+  return normalizeSettings({
+    ...settings,
+    normalRate: Number(data.get('normal-rate')),
+    slowRate: Number(data.get('slow-rate')),
+    recognitionEnabled: data.has('recognition-enabled'),
+    localAi: {
+      enabled: provider !== 'off',
+      provider,
+      baseUrl,
+      model: String(data.get('ai-model') || '').trim(),
+    },
+  });
+}
+
+function saveSettingsFromForm(form) {
+  if (!(form instanceof HTMLFormElement)) return;
+  const next = settingsFromForm(form);
+  const rawBaseUrl = String(new FormData(form).get('ai-base-url') || '').trim();
+  if (next.localAi.provider !== 'off' && !validateLoopbackBaseUrl(rawBaseUrl).valid) {
+    aiConnection = { state: 'bad', message: '地址无效：只允许 localhost、127.0.0.1 或 [::1]。' };
+  } else {
+    aiConnection = {
+      state: next.localAi.enabled ? 'untested' : 'off',
+      message: next.localAi.enabled ? '设置已保存，请测试连接。' : '已关闭，本地练习仍可正常使用。',
+    };
+  }
+  settings = next;
+  saveJson(SETTINGS_KEY, settings);
+  renderSettings();
+}
+
+function updateProviderFields(provider) {
+  const form = app.querySelector('[data-form="settings"]');
+  if (!form || !PROVIDERS.has(provider)) return;
+  form.querySelectorAll('.provider-choice').forEach((choice) => {
+    choice.classList.toggle('is-selected', choice.querySelector('input')?.value === provider);
+  });
+  const fields = form.querySelector('[data-ai-fields]');
+  const testButton = form.querySelector('[data-action="test-local-ai"]');
+  if (fields) fields.hidden = provider === 'off';
+  if (testButton) testButton.disabled = provider === 'off';
+  if (provider === 'ollama' || provider === 'lmstudio') {
+    const baseInput = form.elements.namedItem('ai-base-url');
+    if (baseInput) baseInput.value = LOCAL_AI_PRESETS[provider].baseUrl;
+  }
+  if (provider === 'off') {
+    aiConnection = { state: 'off', message: '关闭' };
+    updateAiStatusInDom();
+  }
+}
+
+async function testLocalAiFromForm(form) {
+  if (!(form instanceof HTMLFormElement)) return;
+  const candidate = settingsFromForm(form);
+  if (candidate.localAi.provider === 'off') {
+    aiConnection = { state: 'off', message: '请先选择一个本机 AI。' };
+    updateAiStatusInDom();
+    return;
+  }
+  const rawBaseUrl = String(new FormData(form).get('ai-base-url') || '').trim();
+  const validation = validateLoopbackBaseUrl(rawBaseUrl);
+  if (!validation.valid) {
+    aiConnection = { state: 'bad', message: '地址无效：只允许本机回环地址和明确端口。' };
+    updateAiStatusInDom();
+    return;
+  }
+
+  aiConnection = { state: 'testing', message: '正在测试本机连接…' };
+  updateAiStatusInDom();
+  const result = await testLocalAiConnection({
+    settings: { ...candidate.localAi, baseUrl: validation.baseUrl },
+    signal: routeAbortController.signal,
+  });
+  if (result.reason === 'aborted') return;
+  aiConnection = result.ok
+    ? { state: 'ok', message: `连接成功，发现 ${result.models.length} 个模型。` }
+    : { state: 'bad', message: localAiFailureMessage(result.reason) };
+  updateAiStatusInDom();
+}
+
+function updateAiStatusInDom() {
+  const element = app.querySelector('.ai-status');
+  if (!element) return;
+  element.className = `ai-status ${aiConnection.state}`;
+  element.textContent = aiConnection.message;
+}
+
+function localAiFailureMessage(reason) {
+  return {
+    timeout: '连接超时，请确认本机模型服务已经启动。',
+    unavailable: '无法连接，请检查服务地址和跨域设置。',
+    'http-error': '服务已响应，但当前接口不可用。',
+    'invalid-response': '服务响应格式不兼容，请使用 OpenAI 兼容接口。',
+    'redirect-rejected': '连接发生跳转，已为安全起见停止。',
+    'invalid-base-url': '地址无效：只允许本机回环地址。',
+  }[reason] || '连接失败，请检查本机服务。';
 }
 
 function loadJson(key, fallback) {

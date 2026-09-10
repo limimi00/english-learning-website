@@ -182,13 +182,16 @@ test('dictation and fillblank inputs are optimized for fast mobile entry', async
   assert.match(appSource, />确认<\/button>/);
 });
 
-test('today page stores and renders the selected daily lesson scope', async () => {
+test('today page defaults to Part 1 and starts the recommended speaking scenario', async () => {
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
 
-  assert.match(appSource, /dailyLessonId: 'all'/);
+  assert.match(appSource, /dailyLessonId: 'part-1'/);
+  assert.match(appSource, /let activeLessonId = 'part-1';/);
   assert.match(appSource, /data-action="set-daily-lesson"/);
   assert.match(appSource, /function lessonScopeControl\(/);
-  assert.match(appSource, /buildDailyPlan\(\{ vocabulary, progress, today: todayKey\(\), limit: settings\.dailyLimit, lessonId: currentDailyLessonId\(\) \}\)/);
+  assert.match(appSource, /data-action="start-speaking"/);
+  assert.match(appSource, /开始 Part \$\{[^}]+\} 口语/);
+  assert.match(appSource, /只使用本课词汇/);
 });
 
 test('lesson detail can start a daily plan scoped to that lesson', async () => {
@@ -214,14 +217,50 @@ test('dashboard treats reviewed words as mastered for visible progress counts', 
   assert.match(appSource, /item\.status === 'learning'\)\.length/);
 });
 
-test('wrong book is a bottom navigation destination after practice', async () => {
+test('speaking-first navigation keeps legacy study destinations under review', async () => {
   const indexSource = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
 
-  assert.match(indexSource, /data-route="practice"[\s\S]*<span>练习<\/span>[\s\S]*data-route="wrongbook"/);
-  assert.match(indexSource, /<span>错题<\/span>/);
+  assert.match(indexSource, /data-route="home"[\s\S]*<span>今日<\/span>/);
+  assert.match(indexSource, /data-route="lessons"[\s\S]*<span>课程<\/span>/);
+  assert.match(indexSource, /data-route="speaking"[\s\S]*<span>对话<\/span>/);
+  assert.match(indexSource, /data-route="review"[\s\S]*<span>复习<\/span>/);
+  assert.match(indexSource, /data-route="settings"[\s\S]*<span>设置<\/span>/);
+  assert.match(appSource, /data-action="open-vocabulary"/);
+  assert.match(appSource, /data-action="open-practice"/);
+  assert.match(appSource, /data-action="open-wrongbook"/);
   assert.match(appSource, /button\.dataset\.route === route/);
-  assert.doesNotMatch(appSource, /route === 'wrongbook' && button\.dataset\.route === 'practice'/);
+  assert.match(appSource, /route === 'wrongbook' && button\.dataset\.route === 'review'/);
+});
+
+test('settings expose safe local AI and voice preferences without making the whole app live', async () => {
+  const indexSource = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const appSource = await readFile(new URL('../assets/js/app.js', import.meta.url), 'utf8');
+  const cssSource = await readFile(new URL('../assets/css/style.css', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(indexSource, /<main[^>]+aria-live="polite"/);
+  assert.match(appSource, /const SETTINGS_KEY = 'english_learning_v3_settings';/);
+  assert.match(appSource, /function renderSettings\(\)/);
+  assert.match(appSource, /data-action="test-local-ai"/);
+  assert.match(appSource, /关闭/);
+  assert.match(appSource, /Ollama/);
+  assert.match(appSource, /LM Studio/);
+  assert.match(appSource, /自定义本机接口/);
+  assert.match(appSource, /浏览器语音识别/);
+  assert.match(appSource, /validateLoopbackBaseUrl/);
+  assert.doesNotMatch(appSource, /api[ _-]?key/i);
+  assert.match(cssSource, /\.ai-status/);
+  assert.match(cssSource, /:focus-visible/);
+});
+
+test('navigation uses local vendored image icons and the shell contains no gradients', async () => {
+  const indexSource = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const cssSource = await readFile(new URL('../assets/css/style.css', import.meta.url), 'utf8');
+
+  assert.match(indexSource, /assets\/icons\/phosphor\/house\.svg/);
+  assert.match(indexSource, /assets\/icons\/phosphor\/gear\.svg/);
+  assert.doesNotMatch(indexSource, /<span class="nav-icon"[^>]*>[\s\S]*?[⌂☰!?]/);
+  assert.doesNotMatch(cssSource, /(?:linear|radial)-gradient\(/);
 });
 
 test('grammar and question practice screens include a top exit action', async () => {
