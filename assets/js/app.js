@@ -725,7 +725,7 @@ function renderLessons() {
               <span class="pill">${lesson.questions.length} 个问答</span>
             </div>
           </div>
-          <span class="icon-button lesson-arrow" aria-hidden="true">›</span>
+          <span class="lesson-open-label" aria-hidden="true">打开</span>
         </button>
       `).join('')}
     </section>
@@ -769,7 +769,7 @@ function renderLessonDetail() {
         ${lesson.sentences.map((sentence) => `
           <article class="practice-item sentence">
             ${escapeHtml(sentence)}
-            <button class="icon-button" type="button" data-action="speak" data-text="${escapeAttr(sentence)}" aria-label="朗读句子">▶</button>
+            <button class="ghost-button compact-action" type="button" data-action="speak" data-text="${escapeAttr(sentence)}">朗读</button>
           </article>
         `).join('')}
       </div>
@@ -1753,7 +1753,7 @@ function wordCard(item) {
       <div class="word-en">${escapeHtml(item.en)}</div>
       <div class="word-cn">${escapeHtml(item.cn || '中文释义待补充')}</div>
       <p class="meta">${item.sources.map(sourceTitle).join('、')} · ${escapeHtml(label)}</p>
-      <button class="icon-button" type="button" data-action="speak" data-text="${escapeAttr(item.en)}" aria-label="朗读 ${escapeAttr(item.en)}">▶</button>
+      <button class="ghost-button compact-action" type="button" data-action="speak" data-text="${escapeAttr(item.en)}" aria-label="朗读 ${escapeAttr(item.en)}">朗读</button>
     </article>
   `;
 }
@@ -1987,10 +1987,10 @@ function renderVocabularyPlayer(items) {
       </div>
       ${supported ? '' : '<p class="feedback bad">当前浏览器不支持语音朗读。</p>'}
       <div class="audio-controls" role="group" aria-label="播放控制">
-        <button class="icon-button" type="button" data-action="previous-vocabulary-word" ${disabled ? 'disabled' : ''} aria-label="上一个词">‹</button>
+        <button class="ghost-button" type="button" data-action="previous-vocabulary-word" ${disabled ? 'disabled' : ''}>上一个</button>
         <button class="primary-button" type="button" data-action="play-vocabulary-audio" ${disabled || playback.playing ? 'disabled' : ''}>播放</button>
         <button class="secondary-button" type="button" data-action="pause-vocabulary-audio" ${disabled || !playback.playing ? 'disabled' : ''}>暂停</button>
-        <button class="icon-button" type="button" data-action="next-vocabulary-word" ${disabled ? 'disabled' : ''} aria-label="下一个词">›</button>
+        <button class="ghost-button" type="button" data-action="next-vocabulary-word" ${disabled ? 'disabled' : ''}>下一个</button>
         <button class="ghost-button loop-toggle ${playback.loop ? 'is-on' : ''}" type="button" data-action="toggle-vocabulary-loop" aria-pressed="${playback.loop ? 'true' : 'false'}" aria-label="${loopLabel}" title="${loopLabel}">${loopLabel}</button>
       </div>
     </section>

@@ -390,17 +390,16 @@ test('sticky title panels keep copy away from the panel edge', async () => {
   assert.doesNotMatch(stickyRules, /padding:\s*[^;]*\s0(?:px)?\s*;/);
 });
 
-test('visual system uses warm organic blob styling', async () => {
+test('visual system uses warm restrained styling without decorative CSS shapes', async () => {
   const cssSource = await readFile(new URL('../assets/css/style.css', import.meta.url), 'utf8');
 
   assert.match(cssSource, /--earth/);
   assert.match(cssSource, /--clay/);
-  assert.match(cssSource, /--organic-radius/);
-  assert.match(cssSource, /body::before/);
-  assert.match(cssSource, /body::after/);
-  assert.match(cssSource, /animation:\s*blobBreath/);
-  assert.match(cssSource, /@keyframes\s+blobBreath/);
-  assert.match(cssSource, /@keyframes\s+organicRadius/);
+  assert.match(cssSource, /--organic-card-radius/);
+  assert.doesNotMatch(cssSource, /body::before/);
+  assert.doesNotMatch(cssSource, /body::after/);
+  assert.doesNotMatch(cssSource, /animation:\s*blobBreath/);
+  assert.doesNotMatch(cssSource, /@keyframes\s+blobBreath/);
 });
 
 test('content panels use safe organic card radii instead of clipping blob radii', async () => {
